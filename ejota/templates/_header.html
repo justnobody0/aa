@@ -1,0 +1,14 @@
+<header class="top">
+  <div>
+    <h1><a href="/" style="color:inherit;text-decoration:none">Rede neural da Ejota</a></h1>
+    <div class="meta">Relatório de atrasos com causa · referência {{ r.data_referencia.strftime('%d/%m/%Y') }} · fonte: {{ r.fonte }}</div>
+  </div>
+  <div class="actions">
+    <form class="inline" method="post" action="/atualizar"><button type="submit">Atualizar dados</button></form>
+    <a class="btn" href="/exportar/relatorio.html">Baixar HTML</a>
+    <a class="btn" href="/exportar/relatorio.csv">Baixar CSV</a>
+    <button type="button" onclick="window.print()">Imprimir / PDF</button>
+    <form class="inline" method="post" action="/logout"><button type="submit">Sair</button></form>
+  </div>
+</header>
+{% if r.fonte == 'dados fictícios' %}<div class="banner ficticio">Ambiente de teste: todos os projetos, clientes, pessoas e valores abaixo são <strong>fictícios</strong>.</div>{% endif %}

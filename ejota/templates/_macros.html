@@ -1,0 +1,83 @@
+{% macro conf(c) -%}
+<span class="badge {{ 'conf-sem' if c.confianca.value == 'sem evidência' else 'conf-' ~ c.confianca.value }}">confiança: {{ c.confianca.value }}</span>
+{%- endmacro %}
+
+{% macro situacao(a) -%}
+{% if a.situacao.conta_como_atraso %}<span class="badge b-atraso">{{ a.situacao.value }}</span>
+{% elif a.situacao.name == 'AGUARDANDO_CLIENTE' %}<span class="badge b-info">{{ a.situacao.value }}</span>
+{% elif a.situacao.name == 'SEM_PRAZO' %}<span class="badge b-warn">{{ a.situacao.value }}</span>
+{% else %}<span class="badge b-ok">{{ a.situacao.value }}</span>{% endif %}
+{%- endmacro %}
+
+{% macro nomes_tarefas(p, ids) -%}
+{% for a in p.analise.tarefas if a.tarefa.id in ids %}{{ a.tarefa.nome }}{% if not loop.last %}, {% endif %}{% endfor %}
+{%- endmacro %}
+
+{% macro bloco_causas(p) %}
+{% if p.causas %}
+  {% if p.causas.aviso %}<div class="banner aviso">{{ p.causas.aviso }}</div>{% endif %}
+  {% for c in p.causas.causas %}
+  <div class="causa {{ 'principal' if c.principal }}">
+    <h3>{{ 'Causa principal' if c.principal else 'Causa secundária' }}: {{ c.categoria.value }} {{ conf(c) }}</h3>
+    <p style="margin:4px 0">{{ c.explicacao }}</p>
+    {% if c.tarefas_relacionadas %}<p class="small muted" style="margin:4px 0">Tarefas atrasadas ligadas: {{ nomes_tarefas(p, c.tarefas_relacionadas) }}</p>{% endif %}
+    {% for e in c.evidencias %}
+    <blockquote>“{{ e.citacao }}”
+      <span class="src"><a href="{{ e.url }}" target="_blank" rel="noopener">{{ e.documento }}</a> · {{ e.secao }} · <code>{{ e.trecho_id }}</code></span>
+    </blockquote>
+    {% else %}
+    <p class="small"><span class="badge conf-sem">sem evidência</span> Nenhum trecho dos documentos sustenta uma causa. Nada foi inferido.</p>
+    {% endfor %}
+  </div>
+  {% endfor %}
+  <p class="small muted">Método da análise: {{ p.causas.metodo }}.</p>
+{% else %}
+  <p class="muted">Projeto sem atraso: não há causa a explicar.</p>
+{% endif %}
+{% endmacro %}
+
+{% macro tabela_tarefas(p) %}
+<div class="table-wrap"><table>
+<thead><tr><th>Tarefa</th><th>Etapa</th><th>Status</th><th>Prazo</th><th>Situação</th><th class="num">Dias de atraso</th><th>Dias por status (a fazer / andamento / finalizado)</th><th>Responsável</th></tr></thead>
+<tbody>
+{% for a in p.analise.tarefas %}
+<tr>
+  <td><a href="{{ a.tarefa.url }}" target="_blank" rel="noopener">{{ a.tarefa.nome }}</a></td>
+  <td>{{ a.tarefa.lista }}</td>
+  <td>{{ a.tarefa.status.value }}</td>
+  <td>{{ a.tarefa.prazo.strftime('%d/%m/%Y') if a.tarefa.prazo else '—' }}</td>
+  <td>{{ situacao(a) }}{% if a.atraso_na_validacao %}<br><span class="small muted">EJ entregou no prazo; atraso na validação do cliente</span>{% endif %}</td>
+  <td class="num">{{ a.dias_atraso or '' }}</td>
+  <td class="small">{{ a.tempo_em_status['a fazer'] }} / {{ a.tempo_em_status['em andamento'] }} / {{ a.tempo_em_status['finalizado'] }}</td>
+  <td>{{ a.tarefa.responsaveis | join(', ') if a.tarefa.responsaveis else '— (lacuna)' }}</td>
+</tr>
+{% endfor %}
+</tbody></table></div>
+{% if p.analise.tarefas_teste_ignoradas %}<p class="small muted">{{ p.analise.tarefas_teste_ignoradas }} tarefa(s) de teste ignorada(s).</p>{% endif %}
+{% endmacro %}
+
+{% macro bloco_lacunas(p) %}
+{% set l = p.analise.lacunas %}
+{% if l.total %}
+<ul class="lacunas small">
+  {% if l.tarefas_sem_prazo %}<li>{{ l.tarefas_sem_prazo }} tarefa(s) sem prazo</li>{% endif %}
+  {% if l.tarefas_sem_responsavel %}<li>{{ l.tarefas_sem_responsavel }} tarefa(s) sem responsável</li>{% endif %}
+  {% if l.sem_prazo_do_projeto %}<li>Prazo do projeto não encontrado no Termo de Abertura</li>{% endif %}
+  {% for d in l.documentos_ausentes %}<li>Documento ausente: {{ d }}</li>{% endfor %}
+  {% for d in l.documentos_ilegiveis %}<li>Documento ilegível (ex.: PDF escaneado): {{ d }}</li>{% endfor %}
+</ul>
+{% else %}<p class="small muted">Nenhuma lacuna de dados.</p>{% endif %}
+{% endmacro %}
+
+{% macro resumo_projeto(p) %}
+{% set a = p.analise %}
+<p style="margin:0 0 8px">
+  {% if a.atrasado %}<span class="badge b-atraso">atrasado</span>{% else %}<span class="badge b-ok">no prazo</span>{% endif %}
+  {% if a.projeto_vencido %}<span class="badge b-atraso">prazo do projeto vencido</span>{% endif %}
+</p>
+<p class="small" style="margin:0">
+  {{ a.atrasadas|length }} de {{ a.tarefas|length }} tarefas com atraso · maior atraso: {{ a.maior_atraso_dias }} dias ·
+  {{ a.aguardando_cliente|length }} aguardando validação do cliente ·
+  prazo do projeto (TAP): {{ a.prazo_projeto.strftime('%d/%m/%Y') if a.prazo_projeto else 'não encontrado' }}
+</p>
+{% endmacro %}

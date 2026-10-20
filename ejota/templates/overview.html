@@ -1,0 +1,77 @@
+{% extends "base.html" %}
+{% from "_macros.html" import conf %}
+{% block title %}Atrasos · Rede Ejota{% endblock %}
+{% block body %}
+{% include "_header.html" %}
+
+<div class="tiles">
+  <div class="tile"><div class="n">{{ r.projetos|length }}</div><div class="l">projetos em andamento</div></div>
+  <div class="tile"><div class="n">{{ r.atrasados|length }}</div><div class="l">projetos atrasados</div></div>
+  <div class="tile"><div class="n">{{ r.total_tarefas_atrasadas }}</div><div class="l">tarefas com atraso</div></div>
+  <div class="tile"><div class="n">{{ r.total_aguardando_cliente }}</div><div class="l">aguardando validação do cliente</div></div>
+  <div class="tile"><div class="n">{{ r.total_lacunas }}</div><div class="l">lacunas de dados</div></div>
+</div>
+
+<h2>Por que os projetos atrasaram</h2>
+{% for p in r.atrasados %}
+{% set c = p.causa_principal %}
+<div class="card">
+  <h3><a href="/projeto/{{ p.slug }}">{{ p.analise.projeto.nome }}</a></h3>
+  <p class="small muted" style="margin:0 0 8px">{{ p.analise.atrasadas|length }} tarefa(s) com atraso · maior atraso {{ p.analise.maior_atraso_dias }} dias{% if p.analise.projeto_vencido %} · prazo do projeto vencido{% endif %}</p>
+  {% if c %}
+    <p style="margin:0 0 6px"><strong>Causa principal: {{ c.categoria.value }}</strong> {{ conf(c) }}</p>
+    <p style="margin:0">{{ c.explicacao }}</p>
+    {% if c.evidencias %}
+    <blockquote>“{{ c.evidencias[0].citacao }}”<span class="src">{{ c.evidencias[0].documento }} · {{ c.evidencias[0].secao }}</span></blockquote>
+    {% endif %}
+    {% set outras = p.causas.causas|rejectattr('principal')|map(attribute='categoria.value')|list %}
+    {% if outras %}<p class="small muted" style="margin:6px 0 0">Também: {{ outras|join(', ') }}</p>{% endif %}
+  {% endif %}
+  <p class="small" style="margin:8px 0 0"><a href="/projeto/{{ p.slug }}">Ver evidências e tarefas →</a></p>
+</div>
+{% else %}
+<p class="muted">Nenhum projeto atrasado.</p>
+{% endfor %}
+
+<h2>Comparação entre projetos</h2>
+<div class="table-wrap"><table>
+<thead><tr><th>Projeto</th><th>Situação</th><th class="num">Tarefas</th><th class="num">Com atraso</th><th class="num">Maior atraso (dias)</th><th class="num">Soma de dias</th><th>Causa principal</th><th>Confiança</th><th class="num">Lacunas</th></tr></thead>
+<tbody>
+{% for p in r.projetos %}
+{% set c = p.causa_principal %}
+<tr>
+  <td><a href="/projeto/{{ p.slug }}">{{ p.analise.projeto.nome }}</a></td>
+  <td>{% if p.analise.atrasado %}<span class="badge b-atraso">atrasado</span>{% else %}<span class="badge b-ok">no prazo</span>{% endif %}</td>
+  <td class="num">{{ p.analise.tarefas|length }}</td>
+  <td class="num">{{ p.analise.atrasadas|length }}</td>
+  <td class="num">{{ p.analise.maior_atraso_dias }}</td>
+  <td class="num">{{ p.analise.soma_dias_atraso }}</td>
+  <td>{{ c.categoria.value if c else '—' }}</td>
+  <td>{{ conf(c) if c else '—' }}</td>
+  <td class="num">{{ p.analise.lacunas.total }}</td>
+</tr>
+{% endfor %}
+</tbody></table></div>
+
+<h2>Causas principais por categoria</h2>
+{% set maximo = (r.causas_por_categoria|map(attribute=1)|max) or 1 %}
+<div class="card bars">
+{% for cat, n in r.causas_por_categoria %}
+  <div class="bar-row"><span>{{ cat }}</span><div class="bar-track"><div class="bar-fill" style="width: {{ (100 * n / maximo)|round }}%"></div></div><span class="num">{{ n }}</span></div>
+{% endfor %}
+</div>
+
+<h2>Tempo médio em cada status (tarefas com atraso, em dias)</h2>
+<div class="table-wrap"><table>
+<thead><tr><th>Projeto</th><th class="num">A fazer</th><th class="num">Em andamento</th><th class="num">Finalizado (aguardando cliente)</th></tr></thead>
+<tbody>
+{% for p in r.atrasados %}{% set t = p.tempo_medio_status %}
+<tr><td>{{ p.analise.projeto.codigo }}</td><td class="num">{{ t.get('a fazer', '—') }}</td><td class="num">{{ t.get('em andamento', '—') }}</td><td class="num">{{ t.get('finalizado', '—') }}</td></tr>
+{% endfor %}
+</tbody></table></div>
+
+<p class="small muted" style="margin-top:24px">
+  Regra de atraso: prazo vencido sem "validado", ou validada depois do prazo. "Finalizado" no prazo conta como aguardando o cliente, não como atraso da EJ.
+  {{ r.tarefas_teste_ignoradas }} tarefa(s) de teste ignorada(s). Gerado em {{ r.gerado_em.strftime('%d/%m/%Y %H:%M') }}.
+</p>
+{% endblock %}
