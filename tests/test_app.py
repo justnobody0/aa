@@ -89,3 +89,21 @@ def test_cookie_copiado_nao_vale_depois_do_logout(logado):
     logado.post("/logout")
     logado.cookies.set("ejota_sessao", copiado)
     assert logado.get("/", follow_redirects=False).status_code == 303
+
+
+def test_configurar_local_cria_login_uma_vez(tmp_path):
+    from argon2 import PasswordHasher
+
+    from ejota.cli import configurar_local
+    from ejota.config import Settings
+
+    env, senha_arq = tmp_path / ".env", tmp_path / ".senha-local"
+    assert configurar_local(env, senha_arq) == 0
+    senha = senha_arq.read_text().strip()
+    cfg = Settings(_env_file=str(env))
+    assert PasswordHasher().verify(cfg.password_hash, senha)
+    assert cfg.secret_key and cfg.cookie_secure
+    assert oct(env.stat().st_mode)[-3:] == "600"
+    antes = env.read_text()
+    configurar_local(env, senha_arq)  # segunda vez não troca a senha
+    assert env.read_text() == antes

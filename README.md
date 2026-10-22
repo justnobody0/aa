@@ -4,10 +4,25 @@ Sistema fechado que lê os projetos em andamento (ClickUp) e os documentos de ca
 projeto (Google Drive) e gera, para o diretor de projetos e comercial, um relatório
 que explica **por que** cada projeto atrasou, com a evidência citada (documento e trecho).
 
-> **Estado atual: Etapas 1 a 6 com dados FICTÍCIOS.** Nenhum dado real é lido.
-> Os conectores reais só serão ligados com autorização da diretoria.
+> **Estado atual:** o aplicativo roda com dados **fictícios**. Os dados reais
+> (ClickUp e Drive) já foram testados com o projeto EJ 26-127 a partir de uma cópia
+> local, que nunca vai para o git. A leitura direta pelas APIs é a Etapa 7.
 
-## Como rodar
+## Abrir no navegador com um clique (GitHub Codespaces)
+
+[![Abrir no GitHub Codespaces](https://github.com/codespaces/badge.svg)](https://codespaces.new/justnobody0/aa?quickstart=1)
+
+1. Clique no botão acima (logado no GitHub) e em **Create codespace**.
+2. Espere de 2 a 3 minutos: o sistema é instalado e o aplicativo sobe sozinho.
+3. Uma aba abre com o aplicativo. Se não abrir, vá na aba **Portas** (Ports) e clique no globo da porta 8000.
+4. O login aparece no terminal: usuário `diretor` e a senha gerada na primeira vez
+   (ela fica no arquivo `.senha-local`, que não vai para o git). Para ver de novo: `bash scripts/acesso.sh`.
+
+O endereço só abre para quem está logado na conta do GitHub dona do Codespace.
+O Codespace para sozinho depois de 30 minutos sem uso. Para voltar, abra o mesmo link:
+ele reaproveita o que já existe. A conta pessoal tem 60 horas grátis por mês.
+
+## Como rodar no seu computador ou servidor
 
 ### Opção A: Docker (recomendado)
 
