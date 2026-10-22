@@ -1,0 +1,112 @@
+{
+  "_aviso": "DADOS 100% FICTÍCIOS para desenvolvimento. Nenhum cliente, valor ou pessoa real.",
+  "projetos": [
+    {
+      "codigo": "EJ 26-901",
+      "cliente": "Padaria Aurora (fictício)",
+      "documentos": [
+        {"id": "901-tap", "tipo": "TAP", "titulo": "Termo de Abertura - EJ 26-901", "arquivo": "901_tap.md"},
+        {"id": "901-contrato", "tipo": "CONTRATO", "titulo": "Contrato - EJ 26-901", "arquivo": "901_contrato.md"},
+        {"id": "901-proposta", "tipo": "PROPOSTA", "titulo": "Proposta Comercial - EJ 26-901", "arquivo": "901_proposta.md"},
+        {"id": "901-ata", "tipo": "ATA", "titulo": "ATA de Projeto - EJ 26-901", "arquivo": "901_ata.md"}
+      ],
+      "tarefas": [
+        {"id": "t901-1", "nome": "Entrevistas com sócios", "lista": "Diagnóstico", "prazo": "2026-08-05", "responsaveis": ["Ana Fictícia"], "criada_em": "2026-07-20T10:00",
+         "historico": [["em andamento", "2026-07-22T09:00"], ["finalizado", "2026-08-03T18:00"], ["validado", "2026-08-04T12:00"]]},
+        {"id": "t901-2", "nome": "Mapeamento de processos", "lista": "Diagnóstico", "prazo": "2026-08-20", "responsaveis": ["Ana Fictícia"], "criada_em": "2026-07-20T10:00",
+         "historico": [["em andamento", "2026-08-06T09:00"], ["finalizado", "2026-08-30T17:00"], ["validado", "2026-09-02T11:00"]]},
+        {"id": "t901-3", "nome": "Identidade visual (pedido extra do cliente)", "lista": "Plano de Marketing", "prazo": "2026-09-25", "responsaveis": ["Bruno Fictício"], "criada_em": "2026-08-28T15:00",
+         "historico": [["em andamento", "2026-09-01T09:00"]]},
+        {"id": "t901-4", "nome": "Calendário de posts", "lista": "Plano de Marketing", "prazo": "2026-10-05", "responsaveis": [], "criada_em": "2026-07-20T10:00",
+         "historico": []},
+        {"id": "t901-5", "nome": "Msg 1", "lista": "Plano de Marketing", "prazo": "2026-08-01", "responsaveis": [], "criada_em": "2026-07-20T10:00", "historico": []},
+        {"id": "t901-6", "nome": "Msg 17", "lista": "Plano de Marketing", "prazo": null, "responsaveis": [], "criada_em": "2026-07-20T10:00", "historico": []},
+        {"id": "t901-7", "nome": "TESTE", "lista": "Diagnóstico", "prazo": "2026-07-25", "responsaveis": [], "criada_em": "2026-07-20T10:00", "historico": []}
+      ]
+    },
+    {
+      "codigo": "EJ 26-902",
+      "cliente": "Clínica Horizonte (fictício)",
+      "documentos": [
+        {"id": "902-tap", "tipo": "TAP", "titulo": "Termo de Abertura - EJ 26-902", "arquivo": "902_tap.md"},
+        {"id": "902-contrato", "tipo": "CONTRATO", "titulo": "Contrato - EJ 26-902", "arquivo": "902_contrato.md"},
+        {"id": "902-ata", "tipo": "ATA", "titulo": "ATA de Projeto - EJ 26-902", "arquivo": "902_ata.md"}
+      ],
+      "tarefas": [
+        {"id": "t902-1", "nome": "Coleta de dados financeiros", "lista": "Levantamento", "prazo": "2026-08-11", "responsaveis": ["Carla Fictícia"], "criada_em": "2026-07-28T10:00",
+         "historico": [["em andamento", "2026-08-04T09:00"], ["finalizado", "2026-09-15T16:00"], ["validado", "2026-09-16T10:00"]]},
+        {"id": "t902-2", "nome": "Análise de custos", "lista": "Análise", "prazo": "2026-09-10", "responsaveis": ["Carla Fictícia", "Diego Fictício"], "criada_em": "2026-07-28T10:00",
+         "historico": [["em andamento", "2026-09-16T11:00"]]},
+        {"id": "t902-3", "nome": "Apresentação do diagnóstico financeiro", "lista": "Análise", "prazo": "2026-10-05", "responsaveis": ["Diego Fictício"], "criada_em": "2026-07-28T10:00",
+         "historico": [["em andamento", "2026-09-20T09:00"], ["finalizado", "2026-10-01T18:00"]]},
+        {"id": "t902-4", "nome": "Relatório final", "lista": "Entrega", "prazo": "2026-10-30", "responsaveis": ["Diego Fictício"], "criada_em": "2026-07-28T10:00",
+         "historico": []}
+      ]
+    },
+    {
+      "codigo": "EJ 26-903",
+      "cliente": "Construtora Vértice (fictício)",
+      "documentos": [
+        {"id": "903-tap", "tipo": "TAP", "titulo": "Termo de Abertura - EJ 26-903", "arquivo": "903_tap.md"},
+        {"id": "903-precificacao", "tipo": "PRECIFICACAO", "titulo": "Precificação de Projeto - EJ 26-903", "arquivo": "903_precificacao.md"},
+        {"id": "903-ata", "tipo": "ATA", "titulo": "ATA de Projeto - EJ 26-903", "arquivo": "903_ata.md"}
+      ],
+      "tarefas": [
+        {"id": "t903-1", "nome": "Levantamento de obras ativas", "lista": "Diagnóstico", "prazo": "2026-08-14", "responsaveis": ["Eva Fictícia"], "criada_em": "2026-08-01T10:00",
+         "historico": [["em andamento", "2026-08-03T09:00"], ["finalizado", "2026-08-13T18:00"], ["validado", "2026-08-14T10:00"]]},
+        {"id": "t903-2", "nome": "Modelagem de custos por obra", "lista": "Modelagem", "prazo": "2026-09-04", "responsaveis": [], "criada_em": "2026-08-01T10:00",
+         "historico": [["em andamento", "2026-08-15T09:00"], ["a fazer", "2026-08-21T09:00"], ["em andamento", "2026-09-08T09:00"], ["finalizado", "2026-10-02T17:00"], ["validado", "2026-10-06T10:00"]]},
+        {"id": "t903-3", "nome": "Dashboard de acompanhamento", "lista": "Modelagem", "prazo": "2026-09-30", "responsaveis": [], "criada_em": "2026-08-01T10:00",
+         "historico": [["em andamento", "2026-10-07T09:00"]]},
+        {"id": "t903-4", "nome": "Treinamento da equipe do cliente", "lista": "Entrega", "prazo": null, "responsaveis": [], "criada_em": "2026-08-01T10:00",
+         "historico": []}
+      ]
+    },
+    {
+      "codigo": "EJ 26-904",
+      "cliente": "Loja Maré (fictício)",
+      "documentos": [
+        {"id": "904-tap", "tipo": "TAP", "titulo": "Termo de Abertura - EJ 26-904", "arquivo": "904_tap.md"},
+        {"id": "904-precificacao", "tipo": "PRECIFICACAO", "titulo": "Precificação de Projeto - EJ 26-904", "arquivo": "904_precificacao.md"},
+        {"id": "904-ata", "tipo": "ATA", "titulo": "ATA de Projeto - EJ 26-904", "arquivo": "904_ata.md"}
+      ],
+      "tarefas": [
+        {"id": "t904-1", "nome": "Pesquisa de mercado", "lista": "Pesquisa", "prazo": "2026-08-28", "responsaveis": ["Felipe Fictício", "Gabi Fictícia"], "criada_em": "2026-08-10T10:00",
+         "historico": [["em andamento", "2026-08-12T09:00"], ["finalizado", "2026-09-29T18:00"], ["validado", "2026-10-01T10:00"]]},
+        {"id": "t904-2", "nome": "Plano de precificação de produtos", "lista": "Estratégia", "prazo": "2026-09-25", "responsaveis": ["Gabi Fictícia"], "criada_em": "2026-08-10T10:00",
+         "historico": [["em andamento", "2026-10-02T09:00"]]},
+        {"id": "t904-3", "nome": "Relatório final", "lista": "Entrega", "prazo": "2026-10-15", "responsaveis": ["Felipe Fictício"], "criada_em": "2026-08-10T10:00",
+         "historico": []}
+      ]
+    },
+    {
+      "codigo": "EJ 26-905",
+      "cliente": "Startup Lumen (fictício)",
+      "documentos": [
+        {"id": "905-tap", "tipo": "TAP", "titulo": "Termo de Abertura - EJ 26-905", "arquivo": "905_tap.md"},
+        {"id": "905-ata", "tipo": "ATA", "titulo": "ATA de Projeto - EJ 26-905", "arquivo": "905_ata.md"}
+      ],
+      "tarefas": [
+        {"id": "t905-1", "nome": "Kickoff e alinhamento", "lista": "Início", "prazo": "2026-09-10", "responsaveis": ["Hugo Fictício"], "criada_em": "2026-09-01T10:00",
+         "historico": [["em andamento", "2026-09-02T09:00"], ["finalizado", "2026-09-09T18:00"], ["validado", "2026-09-10T09:00"]]},
+        {"id": "t905-2", "nome": "Benchmarking de concorrentes", "lista": "Pesquisa", "prazo": "2026-11-05", "responsaveis": ["Hugo Fictício"], "criada_em": "2026-09-01T10:00",
+         "historico": [["em andamento", "2026-09-15T09:00"]]},
+        {"id": "t905-3", "nome": "Definição de persona", "lista": "Pesquisa", "prazo": null, "responsaveis": [], "criada_em": "2026-09-01T10:00",
+         "historico": []}
+      ]
+    },
+    {
+      "codigo": "EJ 26-906",
+      "cliente": "Café Ponte (fictício)",
+      "documentos": [
+        {"id": "906-contrato", "tipo": "CONTRATO", "titulo": "Contrato assinado (PDF escaneado) - EJ 26-906", "arquivo": null}
+      ],
+      "tarefas": [
+        {"id": "t906-1", "nome": "Diagnóstico de atendimento", "lista": "Diagnóstico", "prazo": "2026-09-15", "responsaveis": ["Iara Fictícia"], "criada_em": "2026-08-20T10:00",
+         "historico": [["em andamento", "2026-08-25T09:00"]]},
+        {"id": "t906-2", "nome": "Manual de atendimento", "lista": "Entrega", "prazo": "2026-10-10", "responsaveis": [], "criada_em": "2026-08-20T10:00",
+         "historico": []}
+      ]
+    }
+  ]
+}

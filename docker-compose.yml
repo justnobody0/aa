@@ -1,0 +1,10 @@
+services:
+  ejota:
+    build: .
+    env_file: .env
+    ports:
+      - "127.0.0.1:8000:8000"   # só local; em produção, coloque um proxy HTTPS na frente
+    read_only: true
+    tmpfs: [/tmp]
+    security_opt: ["no-new-privileges:true"]
+    restart: unless-stopped

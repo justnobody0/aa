@@ -1,0 +1,18 @@
+{% extends "base.html" %}
+{% from "_macros.html" import bloco_causas, tabela_tarefas, bloco_lacunas, resumo_projeto %}
+{% block title %}{{ p.analise.projeto.codigo }} · Rede Ejota{% endblock %}
+{% block body %}
+{% include "_header.html" %}
+<p class="small no-print"><a href="/">← Voltar para a visão geral</a></p>
+<h2 style="margin-top:0">{{ p.analise.projeto.nome }}</h2>
+<div class="card">{{ resumo_projeto(p) }}</div>
+
+<h2>Causas e evidências</h2>
+<div class="card">{{ bloco_causas(p) }}</div>
+
+<h2>Tarefas</h2>
+{{ tabela_tarefas(p) }}
+
+<h2>Lacunas de dados</h2>
+<div class="card">{{ bloco_lacunas(p) }}</div>
+{% endblock %}

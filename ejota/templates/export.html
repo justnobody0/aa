@@ -1,0 +1,33 @@
+{% from "_macros.html" import bloco_causas, tabela_tarefas, bloco_lacunas, resumo_projeto, conf %}
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Relatório de atrasos {{ r.data_referencia.strftime('%d/%m/%Y') }}</title>
+<style>{{ css|safe }}</style>
+</head>
+<body><div class="wrap">
+<header class="top"><div>
+  <h1>Relatório de atrasos com causa · Ejota</h1>
+  <div class="meta">Referência {{ r.data_referencia.strftime('%d/%m/%Y') }} · fonte: {{ r.fonte }} · gerado em {{ r.gerado_em.strftime('%d/%m/%Y %H:%M') }} · documento confidencial</div>
+</div></header>
+{% if r.fonte == 'dados fictícios' %}<div class="banner ficticio">Todos os dados deste relatório são fictícios.</div>{% endif %}
+
+<h2>Comparação entre projetos</h2>
+<div class="table-wrap"><table>
+<thead><tr><th>Projeto</th><th class="num">Com atraso</th><th class="num">Maior atraso</th><th>Causa principal</th><th>Confiança</th></tr></thead>
+<tbody>
+{% for p in r.projetos %}{% set c = p.causa_principal %}
+<tr><td>{{ p.analise.projeto.nome }}</td><td class="num">{{ p.analise.atrasadas|length }}</td><td class="num">{{ p.analise.maior_atraso_dias }}</td><td>{{ c.categoria.value if c else '—' }}</td><td>{{ conf(c) if c else '—' }}</td></tr>
+{% endfor %}
+</tbody></table></div>
+
+{% for p in r.projetos %}
+<h2>{{ p.analise.projeto.nome }}</h2>
+<div class="card">{{ resumo_projeto(p) }}</div>
+{% if p.analise.atrasado %}<div class="card">{{ bloco_causas(p) }}</div>{% endif %}
+{{ tabela_tarefas(p) }}
+<div class="card" style="margin-top:12px"><strong class="small">Lacunas</strong>{{ bloco_lacunas(p) }}</div>
+{% endfor %}
+</div></body></html>
