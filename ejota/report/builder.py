@@ -40,7 +40,7 @@ class RelatorioProjeto:
     @property
     def tempo_medio_status(self) -> dict[str, float]:
         """Média de dias em cada status, nas tarefas atrasadas do projeto."""
-        atrasadas = self.analise.atrasadas
+        atrasadas = [a for a in self.analise.atrasadas if a.tempo_em_status]
         if not atrasadas:
             return {}
         return {

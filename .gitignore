@@ -8,3 +8,6 @@ build/
 dist/
 credentials*.json
 token*.json
+
+# Dados reais exportados (nunca no git)
+snapshots/

@@ -17,6 +17,15 @@ class Status(str, Enum):
     FINALIZADO = "finalizado"  # entregue pela EJ, aguardando validação do cliente
     VALIDADO = "validado"  # único status que fecha de fato a tarefa
 
+    @classmethod
+    def de_texto(cls, texto: str) -> Status:
+        """Aceita também os nomes padrão do ClickUp que aparecem em listas antigas."""
+        t = texto.strip().lower()
+        return cls(_ALIASES_STATUS.get(t, t))
+
+
+_ALIASES_STATUS = {"to do": "a fazer", "open": "a fazer", "in progress": "em andamento"}
+
 
 class Categoria(str, Enum):
     ESCOPO = "escopo"
@@ -65,6 +74,9 @@ class Tarefa:
     finalizada_em: datetime | None = None  # quando chegou em "finalizado"
     historico: list[MudancaStatus] = field(default_factory=list)
     url: str = ""
+    # False quando a fonte não guarda as mudanças de status (ClickUp sem o
+    # ClickApp "Tempo em Status"): aí o tempo em cada status não é calculado.
+    historico_completo: bool = True
 
 
 @dataclass

@@ -5,7 +5,7 @@
 {% macro situacao(a) -%}
 {% if a.situacao.conta_como_atraso %}<span class="badge b-atraso">{{ a.situacao.value }}</span>
 {% elif a.situacao.name == 'AGUARDANDO_CLIENTE' %}<span class="badge b-info">{{ a.situacao.value }}</span>
-{% elif a.situacao.name == 'SEM_PRAZO' %}<span class="badge b-warn">{{ a.situacao.value }}</span>
+{% elif a.situacao.name in ('SEM_PRAZO', 'FINALIZADO_SEM_DATA') %}<span class="badge b-warn">{{ a.situacao.value }}</span>
 {% else %}<span class="badge b-ok">{{ a.situacao.value }}</span>{% endif %}
 {%- endmacro %}
 
@@ -48,7 +48,7 @@
   <td>{{ a.tarefa.prazo.strftime('%d/%m/%Y') if a.tarefa.prazo else '—' }}</td>
   <td>{{ situacao(a) }}{% if a.atraso_na_validacao %}<br><span class="small muted">EJ entregou no prazo; atraso na validação do cliente</span>{% endif %}</td>
   <td class="num">{{ a.dias_atraso or '' }}</td>
-  <td class="small">{{ a.tempo_em_status['a fazer'] }} / {{ a.tempo_em_status['em andamento'] }} / {{ a.tempo_em_status['finalizado'] }}</td>
+  <td class="small">{% if a.tempo_em_status %}{{ a.tempo_em_status['a fazer'] }} / {{ a.tempo_em_status['em andamento'] }} / {{ a.tempo_em_status['finalizado'] }}{% else %}<span class="muted">sem histórico</span>{% endif %}</td>
   <td>{{ a.tarefa.responsaveis | join(', ') if a.tarefa.responsaveis else '— (lacuna)' }}</td>
 </tr>
 {% endfor %}
@@ -63,6 +63,9 @@
   {% if l.tarefas_sem_prazo %}<li>{{ l.tarefas_sem_prazo }} tarefa(s) sem prazo</li>{% endif %}
   {% if l.tarefas_sem_responsavel %}<li>{{ l.tarefas_sem_responsavel }} tarefa(s) sem responsável</li>{% endif %}
   {% if l.sem_prazo_do_projeto %}<li>Prazo do projeto não encontrado no Termo de Abertura</li>{% endif %}
+  {% if l.datas_do_tap_incoerentes %}<li>Datas do Termo de Abertura incoerentes (previsão de fim antes do início)</li>{% endif %}
+  {% if l.entregas_sem_data %}<li>{{ l.entregas_sem_data }} tarefa(s) "finalizado" sem data de entrega registrada</li>{% endif %}
+  {% if l.fechamentos_em_lote %}<li>{{ l.fechamentos_em_lote }} tarefa(s) fechada(s) no mesmo instante que outras (atualização em lote: a data pode não ser a da validação real)</li>{% endif %}
   {% for d in l.documentos_ausentes %}<li>Documento ausente: {{ d }}</li>{% endfor %}
   {% for d in l.documentos_ilegiveis %}<li>Documento ilegível (ex.: PDF escaneado): {{ d }}</li>{% endfor %}
 </ul>

@@ -13,8 +13,10 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 class Settings(BaseSettings):
     model_config = SettingsConfigDict(env_prefix="EJOTA_", env_file=".env", extra="ignore")
 
-    # Fonte de dados: "fake" (fictícios) até haver autorização da diretoria.
-    data_source: Literal["fake", "real"] = "fake"
+    # Fonte de dados: "fake" (fictícios), "snapshot" (cópia local de dados
+    # reais, fora do git) ou "real" (APIs, Etapa 7).
+    data_source: Literal["fake", "snapshot", "real"] = "fake"
+    snapshot_dir: str = ""
 
     # Login de usuário único (o diretor).
     username: str = "diretor"
@@ -23,8 +25,10 @@ class Settings(BaseSettings):
     session_max_age_s: int = 8 * 3600
     cookie_secure: bool = True
 
-    # Análise de causa: "heuristica" roda sem IA; "claude" usa a API do Claude.
-    analyzer: Literal["heuristica", "claude"] = "heuristica"
+    # Análise de causa: "heuristica" roda sem IA; "claude" usa a API do Claude;
+    # "arquivo" lê causas já propostas (causas_propostas.json do snapshot).
+    # Em todos os casos as citações passam pelo verificador.
+    analyzer: Literal["heuristica", "claude", "arquivo"] = "heuristica"
     anthropic_model: str = "claude-opus-5-5"
 
     # Data de referência do relatório (vazio = hoje). Útil para testes reprodutíveis.

@@ -13,6 +13,7 @@ cliente". Se foi entregue depois do prazo, conta como atraso.
 from __future__ import annotations
 
 import re
+from collections import Counter
 from dataclasses import dataclass, field
 from datetime import date, datetime, time
 from enum import Enum
@@ -20,7 +21,11 @@ from enum import Enum
 from ejota.domain import Projeto, Status, Tarefa, TipoDocumento
 
 _TESTE = re.compile(r"^\s*(msg\s*\d+|teste)\s*$", re.IGNORECASE)
-_PRAZO_TAP = re.compile(r"prazo final do projeto:\s*(\d{2})/(\d{2})/(\d{4})", re.IGNORECASE)
+_DATA = r"(\d{2})/(\d{2})/(\d{4})"
+# Modelo simples ("Prazo final do projeto: dd/mm/aaaa") ou o TAP real da EJ, que
+# tem uma "Previsão de fim" por frente do projeto.
+_FIM_TAP = re.compile(r"(?:prazo final do projeto|previs[ãa]o de fim):\s*" + _DATA, re.IGNORECASE)
+_INICIO_TAP = re.compile(r"in[íi]cio:\s*" + _DATA, re.IGNORECASE)
 
 DOCUMENTOS_ESPERADOS = (TipoDocumento.TAP, TipoDocumento.ATA)
 
@@ -37,6 +42,9 @@ class Situacao(str, Enum):
     CONCLUIDA_NO_PRAZO = "concluída no prazo"
     EM_DIA = "em dia"
     SEM_PRAZO = "sem prazo (lacuna)"
+    # "finalizado" sem a data da entrega: o ClickUp só registra a data de
+    # fechamento ("validado"), então não dá para saber se foi entregue no prazo.
+    FINALIZADO_SEM_DATA = "finalizado, data de entrega não registrada"
 
     @property
     def conta_como_atraso(self) -> bool:
@@ -61,6 +69,11 @@ class Lacunas:
     documentos_ilegiveis: list[str] = field(default_factory=list)
     documentos_ausentes: list[str] = field(default_factory=list)
     sem_prazo_do_projeto: bool = False
+    entregas_sem_data: int = 0
+    # Tarefas fechadas no mesmo instante que outra: sinal de atualização em lote,
+    # em que a data do ClickUp não é a data real da validação.
+    fechamentos_em_lote: int = 0
+    datas_do_tap_incoerentes: bool = False
 
     @property
     def total(self) -> int:
@@ -70,6 +83,9 @@ class Lacunas:
             + len(self.documentos_ilegiveis)
             + len(self.documentos_ausentes)
             + int(self.sem_prazo_do_projeto)
+            + self.entregas_sem_data
+            + self.fechamentos_em_lote
+            + int(self.datas_do_tap_incoerentes)
         )
 
 
@@ -116,7 +132,12 @@ def _fim_do_dia(d: date) -> datetime:
 
 
 def tempo_em_status(tarefa: Tarefa, agora: datetime) -> dict[str, float]:
-    """Dias em cada status, a partir do histórico (começa em "a fazer" na criação)."""
+    """Dias em cada status, a partir do histórico (começa em "a fazer" na criação).
+
+    Vazio quando a fonte não tem o histórico de status.
+    """
+    if not tarefa.historico_completo:
+        return {}
     marcos = [(Status.A_FAZER, tarefa.criada_em), *((m.status, m.em) for m in tarefa.historico)]
     tempos: dict[str, float] = {s.value: 0.0 for s in Status}
     for i, (status, inicio) in enumerate(marcos):
@@ -146,7 +167,9 @@ def analisar_tarefa(tarefa: Tarefa, hoje: date) -> AnaliseTarefa:
         return resultado(Situacao.CONCLUIDA_NO_PRAZO)
 
     if tarefa.status == Status.FINALIZADO:
-        entregue = (tarefa.finalizada_em or agora).date()
+        if tarefa.finalizada_em is None:
+            return resultado(Situacao.FINALIZADO_SEM_DATA if hoje > prazo else Situacao.EM_DIA)
+        entregue = tarefa.finalizada_em.date()
         if entregue > prazo:
             return resultado(Situacao.ENTREGUE_COM_ATRASO, (entregue - prazo).days)
         if hoje > prazo:
@@ -158,20 +181,36 @@ def analisar_tarefa(tarefa: Tarefa, hoje: date) -> AnaliseTarefa:
     return resultado(Situacao.EM_DIA)
 
 
-def prazo_do_projeto(projeto: Projeto) -> date | None:
+def _datas(regex: re.Pattern, texto: str) -> list[date]:
+    datas = []
+    for dia, mes, ano in regex.findall(texto):
+        try:
+            datas.append(date(int(ano), int(mes), int(dia)))
+        except ValueError:
+            continue
+    return datas
+
+
+def prazo_do_projeto(projeto: Projeto) -> tuple[date | None, bool]:
+    """Prazo final pelo TAP (a maior "Previsão de fim") e se as datas são incoerentes.
+
+    Incoerente = alguma previsão de fim anterior a alguma data de início.
+    """
     for doc in projeto.documentos:
         if doc.tipo == TipoDocumento.TAP and doc.texto:
-            m = _PRAZO_TAP.search(doc.texto)
-            if m:
-                dia, mes, ano = map(int, m.groups())
-                return date(ano, mes, dia)
-    return None
+            fins = _datas(_FIM_TAP, doc.texto)
+            if fins:
+                inicios = _datas(_INICIO_TAP, doc.texto)
+                incoerente = bool(inicios) and min(fins) < max(inicios)
+                return max(fins), incoerente
+    return None, False
 
 
 def analisar_projeto(projeto: Projeto, hoje: date) -> AnaliseProjeto:
     reais = [t for t in projeto.tarefas if not eh_tarefa_de_teste(t.nome)]
     analises = [analisar_tarefa(t, hoje) for t in reais]
-    prazo = prazo_do_projeto(projeto)
+    prazo, tap_incoerente = prazo_do_projeto(projeto)
+    fechamentos = Counter(t.fechada_em.replace(second=0, microsecond=0) for t in reais if t.fechada_em)
 
     tipos = {d.tipo for d in projeto.documentos if d.texto}
     lacunas = Lacunas(
@@ -181,5 +220,8 @@ def analisar_projeto(projeto: Projeto, hoje: date) -> AnaliseProjeto:
         documentos_ausentes=[t.value for t in DOCUMENTOS_ESPERADOS if t not in tipos]
         + ([] if tipos & {TipoDocumento.CONTRATO, TipoDocumento.PROPOSTA} else ["Contrato ou Proposta Comercial"]),
         sem_prazo_do_projeto=prazo is None,
+        entregas_sem_data=sum(1 for a in analises if a.situacao == Situacao.FINALIZADO_SEM_DATA),
+        fechamentos_em_lote=sum(n for n in fechamentos.values() if n > 1),
+        datas_do_tap_incoerentes=tap_incoerente,
     )
     return AnaliseProjeto(projeto, analises, len(projeto.tarefas) - len(reais), prazo, lacunas, hoje)

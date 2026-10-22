@@ -27,6 +27,8 @@ def analisar_causas(analise: AnaliseProjeto, settings: Settings) -> ResultadoCau
     trechos = trechos_do_projeto(analise.projeto)
     ids_atrasadas = {a.tarefa.id for a in analise.atrasadas}
 
+    if settings.analyzer == "arquivo":
+        return _de_arquivo(analise, trechos, ids_atrasadas, settings)
     if settings.analyzer == "claude":
         try:
             return _com_claude(analise, trechos, ids_atrasadas, settings)
@@ -41,6 +43,35 @@ def analisar_causas(analise: AnaliseProjeto, settings: Settings) -> ResultadoCau
 def _heuristica(analise, trechos, ids_atrasadas) -> ResultadoCausas:
     propostas = heuristic.propor_causas(analise, trechos)
     return ResultadoCausas(_ordenar(verificar(propostas, trechos, ids_atrasadas)), "heurística (sem IA)")
+
+
+def _de_arquivo(analise, trechos, ids_atrasadas, settings: Settings) -> ResultadoCausas:
+    """Causas propostas fora do sistema (ex.: análise feita pelo Claude numa sessão),
+    gravadas em `causas_propostas.json` no snapshot. Passam pelo mesmo verificador."""
+    import json
+    from pathlib import Path
+
+    from ejota.analysis.verify import CausaProposta
+    from ejota.domain import Categoria
+
+    caminho = Path(settings.snapshot_dir) / "causas_propostas.json"
+    dados = json.loads(caminho.read_text(encoding="utf-8")) if caminho.exists() else {}
+    bruto = dados.get(analise.projeto.codigo)
+    if not bruto:
+        resultado = _heuristica(analise, trechos, ids_atrasadas)
+        resultado.aviso = "Sem análise registrada para este projeto; exibindo a heurística."
+        return resultado
+    propostas = [
+        CausaProposta(
+            categoria=Categoria(c["categoria"]),
+            explicacao=c["explicacao"],
+            citacoes=[(x["trecho_id"], x["citacao"]) for x in c["citacoes"]],
+            tarefas_relacionadas=c.get("tarefas_relacionadas", []),
+            principal=c.get("principal", False),
+        )
+        for c in bruto["causas"]
+    ]
+    return ResultadoCausas(_ordenar(verificar(propostas, trechos, ids_atrasadas)), bruto.get("metodo", "análise registrada"))
 
 
 def _com_claude(analise, trechos, ids_atrasadas, settings: Settings) -> ResultadoCausas:

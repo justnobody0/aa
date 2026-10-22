@@ -1,4 +1,13 @@
-"""Fonte de dados fictícia, no mesmo formato que o ClickUp + Drive vão gerar."""
+"""Fontes de dados em arquivo, no mesmo formato que o ClickUp + Drive vão gerar.
+
+- `FonteFicticia`: os projetos fictícios que vêm com o código.
+- `FonteArquivo`: um snapshot local (ex.: dados reais exportados), apontado por
+  EJOTA_SNAPSHOT_DIR. Snapshots reais nunca vão para o git.
+
+Formato de `projects.json`: veja `data/fake/projects.json`. Campos opcionais
+para dados reais: `status`, `fechada_em`, `finalizada_em`, `url` (tarefa,
+projeto e documento) e `historico_completo`.
+"""
 
 from __future__ import annotations
 
@@ -11,8 +20,12 @@ from ejota.domain import Documento, MudancaStatus, Projeto, Status, Tarefa, Tipo
 DATA_DIR = Path(__file__).resolve().parent.parent / "data" / "fake"
 
 
-class FonteFicticia:
-    def __init__(self, data_dir: Path = DATA_DIR) -> None:
+def _dt(valor: str | None) -> datetime | None:
+    return datetime.fromisoformat(valor) if valor else None
+
+
+class FonteArquivo:
+    def __init__(self, data_dir: Path) -> None:
         self.data_dir = data_dir
 
     def listar_projetos(self) -> list[Projeto]:
@@ -26,17 +39,21 @@ class FonteFicticia:
             cliente=p["cliente"],
             tarefas=[self._tarefa(t) for t in p["tarefas"]],
             documentos=[self._documento(d) for d in p["documentos"]],
-            url=f"#ficticio/clickup/{slug}",
+            url=p.get("url") or f"#ficticio/clickup/{slug}",
         )
 
     def _tarefa(self, t: dict) -> Tarefa:
-        historico = [MudancaStatus(Status(s), datetime.fromisoformat(em)) for s, em in t["historico"]]
-        status = historico[-1].status if historico else Status.A_FAZER
+        historico = [MudancaStatus(Status.de_texto(s), datetime.fromisoformat(em)) for s, em in t.get("historico", [])]
+        if "status" in t:
+            status = Status.de_texto(t["status"])
+        else:
+            status = historico[-1].status if historico else Status.A_FAZER
 
         def ultima_entrada(alvo: Status) -> datetime | None:
             datas = [m.em for m in historico if m.status == alvo]
             return datas[-1] if datas else None
 
+        fechada = _dt(t.get("fechada_em")) or ultima_entrada(Status.VALIDADO)
         return Tarefa(
             id=t["id"],
             nome=t["nome"],
@@ -45,10 +62,11 @@ class FonteFicticia:
             prazo=date.fromisoformat(t["prazo"]) if t["prazo"] else None,
             responsaveis=t["responsaveis"],
             criada_em=datetime.fromisoformat(t["criada_em"]),
-            fechada_em=ultima_entrada(Status.VALIDADO) if status == Status.VALIDADO else None,
-            finalizada_em=ultima_entrada(Status.FINALIZADO),
+            fechada_em=fechada if status == Status.VALIDADO else None,
+            finalizada_em=_dt(t.get("finalizada_em")) or ultima_entrada(Status.FINALIZADO),
             historico=historico,
-            url=f"#ficticio/clickup/{t['id']}",
+            url=t.get("url") or f"#ficticio/clickup/{t['id']}",
+            historico_completo=t.get("historico_completo", True),
         )
 
     def _documento(self, d: dict) -> Documento:
@@ -59,6 +77,11 @@ class FonteFicticia:
             id=d["id"],
             tipo=TipoDocumento[d["tipo"]],
             titulo=d["titulo"],
-            url=f"#ficticio/drive/{d['id']}",
+            url=d.get("url") or f"#ficticio/drive/{d['id']}",
             texto=texto,
         )
+
+
+class FonteFicticia(FonteArquivo):
+    def __init__(self, data_dir: Path = DATA_DIR) -> None:
+        super().__init__(data_dir)
