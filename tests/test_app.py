@@ -74,3 +74,18 @@ def test_hash_entre_aspas_e_aceito():
     from ejota.config import Settings
 
     assert Settings(_env_file=None, password_hash="'$argon2id$abc'").password_hash == "$argon2id$abc"
+
+
+def test_bibliotecas_de_rede_nao_logam_corpo_em_debug():
+    from ejota.logging_setup import BIBLIOTECAS_SILENCIADAS, setup_logging
+
+    setup_logging("DEBUG")
+    for nome in BIBLIOTECAS_SILENCIADAS:
+        assert not logging.getLogger(nome).isEnabledFor(logging.DEBUG), nome
+
+
+def test_cookie_copiado_nao_vale_depois_do_logout(logado):
+    copiado = logado.cookies.get("ejota_sessao")
+    logado.post("/logout")
+    logado.cookies.set("ejota_sessao", copiado)
+    assert logado.get("/", follow_redirects=False).status_code == 303

@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import logging
+import os
 from dataclasses import dataclass, replace
 
 from ejota.analysis import heuristic
@@ -30,6 +31,11 @@ def analisar_causas(analise: AnaliseProjeto, settings: Settings) -> ResultadoCau
     if settings.analyzer == "arquivo":
         return _de_arquivo(analise, trechos, ids_atrasadas, settings)
     if settings.analyzer == "claude":
+        if not os.environ.get("ANTHROPIC_API_KEY"):
+            log.warning("ANTHROPIC_API_KEY não definida: usando a heurística.")
+            resultado = _heuristica(analise, trechos, ids_atrasadas)
+            resultado.aviso = "Chave da API do Claude não configurada; exibindo a heurística."
+            return resultado
         try:
             return _com_claude(analise, trechos, ids_atrasadas, settings)
         except Exception as exc:  # noqa: BLE001 — falha da IA não pode derrubar o relatório

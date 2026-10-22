@@ -90,8 +90,7 @@ def criar_app(settings: Settings | None = None) -> FastAPI:
     def login(request: Request, usuario: str = Form(...), senha: str = Form(...)):
         ip = request.client.host if request.client else "?"
         if auth.verificar_login(settings, ip, usuario, senha):
-            request.session.clear()
-            request.session["usuario"] = usuario
+            auth.abrir_sessao(request, usuario)
             log.info("Login bem-sucedido")
             return RedirectResponse("/", status_code=303)
         log.warning("Falha de login")
@@ -101,7 +100,7 @@ def criar_app(settings: Settings | None = None) -> FastAPI:
 
     @app.post("/logout")
     def logout(request: Request):
-        request.session.clear()
+        auth.encerrar_sessao(request)
         return RedirectResponse("/login", status_code=303)
 
     @app.get("/", response_class=HTMLResponse)

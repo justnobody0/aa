@@ -82,6 +82,7 @@ def test_falha_do_claude_cai_para_heuristica(settings, monkeypatch):
         raise RuntimeError("sem rede")
 
     monkeypatch.setattr(claude, "propor_causas", explode)
+    monkeypatch.setenv("ANTHROPIC_API_KEY", "chave-falsa")
     settings.analyzer = "claude"
     projeto = FonteFicticia().listar_projetos()[0]
     resultado = analisar_causas(analisar_projeto(projeto, HOJE), settings)
@@ -102,6 +103,7 @@ def test_claude_com_resposta_simulada_passa_pelo_verificador(settings, monkeypat
         ]
 
     monkeypatch.setattr(claude, "propor_causas", falso)
+    monkeypatch.setenv("ANTHROPIC_API_KEY", "chave-falsa")
     settings.analyzer = "claude"
     projeto = next(p for p in FonteFicticia().listar_projetos() if p.codigo == "EJ 26-901")
     resultado = analisar_causas(analisar_projeto(projeto, HOJE), settings)
@@ -109,3 +111,12 @@ def test_claude_com_resposta_simulada_passa_pelo_verificador(settings, monkeypat
     assert escopo.principal and escopo.evidencias
     assert "Padaria Aurora" in escopo.explicacao  # marcador revertido na exibição
     assert equipe.confianca == Confianca.SEM_EVIDENCIA
+
+
+def test_sem_chave_da_api_usa_heuristica_com_aviso(settings, monkeypatch):
+    monkeypatch.delenv("ANTHROPIC_API_KEY", raising=False)
+    settings.analyzer = "claude"
+    projeto = FonteFicticia().listar_projetos()[0]
+    resultado = analisar_causas(analisar_projeto(projeto, HOJE), settings)
+    assert resultado.metodo.startswith("heurística")
+    assert "Chave da API" in resultado.aviso

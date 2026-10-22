@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import hmac
+import secrets
 import time
 from collections import defaultdict
 
@@ -44,5 +45,25 @@ def verificar_login(settings: Settings, ip: str, usuario: str, senha: str) -> bo
     return False
 
 
+# Sessões ativas ficam no servidor: o cookie só carrega um identificador
+# aleatório. Assim o logout revoga a sessão de verdade (um cookie copiado deixa
+# de valer). Reiniciar o servidor encerra todas as sessões.
+_sessoes_ativas: set[str] = set()
+
+
+def abrir_sessao(request: Request, usuario: str) -> None:
+    request.session.clear()
+    sid = secrets.token_urlsafe(32)
+    _sessoes_ativas.add(sid)
+    request.session.update({"usuario": usuario, "sid": sid})
+
+
+def encerrar_sessao(request: Request) -> None:
+    _sessoes_ativas.discard(request.session.get("sid", ""))
+    request.session.clear()
+
+
 def usuario_logado(request: Request) -> str | None:
+    if request.session.get("sid") not in _sessoes_ativas:
+        return None
     return request.session.get("usuario")
