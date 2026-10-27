@@ -56,12 +56,16 @@ def test_comercial_ignora_preco_ilegivel_e_rateia_por_area():
     assert areas["Processos"].entrega.atrasadas == 1
 
 
-def test_rede_liga_projetos_areas_e_lacunas():
+def test_rede_marketing_no_centro_e_bolhas_por_area():
     m = calcular_metricas(_projetos())
     rede = montar_rede(m)
-    ids = {n.id for n in rede.nos}
-    assert {"EJ 26-001", "area:Processos", "area:Marketing", "perfil:Micro empresa",
-            "lacuna:sem-prazo", "lacuna:sem-precificacao", "lacuna:preco-com-erro"} <= ids
-    perfil = next(n for n in rede.nos if n.id == "perfil:Micro empresa")
-    assert perfil.metricas["Projetos ligados"] == "2"
-    assert rede.para_json()["arestas"]
+    nomes = [h.area for h in rede.hubs]
+    assert nomes[len([a for a in nomes if a != "Geral"]) // 2] == "Marketing"
+    assert nomes[-1] == "Geral"  # projeto sem área fica na ponta
+    bolha = {b.indicador.codigo: b for b in rede.bolhas}
+    assert bolha["EJ 26-001"].area == "Processos" and bolha["EJ 26-001"].outras_areas == ["Marketing"]
+    assert bolha["EJ 26-003"].area == "Tech-Dev"
+    assert "nenhuma tarefa com prazo" in bolha["EJ 26-002"].lacunas
+    assert "precificação com erro" in bolha["EJ 26-003"].lacunas
+    ligs = rede.ligacoes()
+    assert ("ej-26-001", "area-processos", True) in ligs and ("ej-26-001", "area-marketing", False) in ligs

@@ -31,7 +31,7 @@ def test_metricas_rede_e_atrasos(logado):
     assert m.status_code == 200 and "Pontualidade".lower() in m.text.lower() and "carteira orçada" in m.text
     assert "fictícios" in m.text and "Padaria Aurora" in m.text
     rede = logado.get("/rede")
-    assert rede.status_code == 200 and 'id="dados-rede"' in rede.text and "area:Processos" in rede.text
+    assert rede.status_code == 200 and 'id="dados-rede"' in rede.text and 'id="area-processos"' in rede.text
     assert logado.get("/static/rede.js").status_code == 200
     r = logado.get("/atrasos")
     assert r.status_code == 200

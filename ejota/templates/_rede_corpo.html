@@ -1,13 +1,48 @@
-<p class="small muted" style="margin-top:0">Cada projeto se liga às áreas que executam, às causas de atraso com evidência, ao porte do cliente e às lacunas de dados. Clique num ponto para ver as métricas dele; arraste para reorganizar.</p>
-<div class="legenda no-print" id="filtros">
-  <label><input type="checkbox" value="area" checked> <span class="dot n-area" style="background:var(--accent)"></span>áreas</label>
-  <label><input type="checkbox" value="causa" checked> <span class="dot" style="background:var(--causa)"></span>causas</label>
-  <label><input type="checkbox" value="perfil" checked> <span class="dot" style="background:var(--perfil)"></span>porte do cliente</label>
-  <label><input type="checkbox" value="lacuna" checked> <span class="dot" style="background:var(--muted)"></span>lacunas</label>
-  <span><span class="dot s-vermelho"></span>projeto crítico <span class="dot s-amarelo" style="margin-left:6px"></span>atenção <span class="dot s-verde" style="margin-left:6px"></span>saudável</span>
+{% macro bolha(b) %}{% set p = b.indicador %}{% set a = b.analise %}
+<article class="bolha s-borda-{{ p.saude }}" id="{{ b.id }}" data-area="{{ b.area }}">
+  <header>
+    <span class="dot s-{{ p.saude }}"></span>
+    <strong>{% if exportado %}{{ a.projeto.codigo }}{% else %}<a href="/projeto/{{ p.slug }}">{{ a.projeto.codigo }}</a>{% endif %}</strong>
+    <span class="cliente">{{ a.projeto.cliente }}</span>
+  </header>
+  <p class="motivo">{{ p.motivo_saude }}</p>
+  <dl class="numeros">
+    <div><dt>Tarefas</dt><dd>{{ p.entrega.tarefas }}</dd></div>
+    <div><dt>Concluídas</dt><dd>{{ p.entrega.conclusao|pct }}</dd></div>
+    <div><dt>Maior atraso</dt><dd>{{ a.maior_atraso_dias }} d</dd></div>
+    <div><dt>Orçado</dt><dd>{{ p.valor_orcado|moeda if p.valor_orcado else '—' }}</dd></div>
+  </dl>
+  {% if b.outras_areas %}<p class="tags">Também: {{ b.outras_areas|join(', ') }}</p>{% endif %}
+  {% if b.causas %}
+  <ul class="causas">
+    {% for c in b.causas %}
+    <li class="{{ 'principal' if c.principal }}">
+      <p><span class="cat">{{ c.categoria }}{{ ' · principal' if c.principal }}</span> <span class="badge conf-{{ 'sem' if c.confianca == 'sem evidência' else c.confianca }}">{{ c.confianca }}</span></p>
+      <p>{{ c.resumo }}</p>
+      {% if c.citacao %}<blockquote>“{{ c.citacao }}”<span class="src">{% if c.url.startswith('http') %}<a href="{{ c.url }}" target="_blank" rel="noopener">{{ c.fonte }}</a>{% else %}{{ c.fonte }}{% endif %}</span></blockquote>{% endif %}
+    </li>
+    {% endfor %}
+  </ul>
+  {% elif a.atrasado %}<p class="vazio">Atrasado, sem causa com evidência (ATA sem registro).</p>
+  {% endif %}
+  {% if b.documentos %}<p class="docs">{% for d in b.documentos %}<a href="{{ d.url }}" target="_blank" rel="noopener">{{ d.tipo.value.split(' ')[0] if d.tipo.name in ('ATA', 'TAP') else d.tipo.value }}</a>{% endfor %}</p>{% endif %}
+  {% if b.lacunas %}<p class="lacunas-bolha">{% for l in b.lacunas %}<span>{{ l }}</span>{% endfor %}</p>{% endif %}
+</article>
+{% endmacro %}
+<p class="small muted" style="margin-top:0">As áreas da EJ ficam na linha do meio, com Marketing no centro. Cada projeto se liga à área onde está a maior parte das suas tarefas (linha cheia) e às outras áreas que também atuam nele (linha tracejada).</p>
+<p class="legenda"><span><span class="dot s-vermelho"></span>crítico</span><span><span class="dot s-amarelo"></span>atenção</span><span><span class="dot s-verde"></span>saudável</span></p>
+<div class="mapa-scroll" id="mapa-scroll">
+  <div class="mapa" id="mapa" style="grid-template-columns: {% for h in r.rede.hubs %}{{ 580 if h.largura == 2 else 290 }}px {% endfor %}">
+    <svg class="mapa-linhas" id="mapa-linhas" aria-hidden="true"></svg>
+    {% for h in r.rede.hubs %}
+    <div class="col-acima{{ ' duplo' if h.largura == 2 }}" style="grid-column: {{ loop.index }}">{% for b in h.acima %}{{ bolha(b) }}{% endfor %}</div>
+    <div class="hub{{ ' central' if h.area == 'Marketing' }}" id="{{ h.id }}" style="grid-column: {{ loop.index }}">
+      <strong>{{ 'Sem área no ClickUp' if h.area == 'Geral' else h.area }}</strong>
+      <span>{{ h.bolhas|length }} projeto(s){% if h.secundarios %} + {{ h.secundarios }} em apoio{% endif %}{% if h.indicador and h.indicador.entrega.pontualidade is not none %} · pontualidade {{ h.indicador.entrega.pontualidade|pct }}{% endif %}</span>
+      {% if h.indicador and h.indicador.valor_orcado %}<span>{{ h.indicador.valor_orcado|moeda }} orçados</span>{% endif %}
+    </div>
+    <div class="col-abaixo{{ ' duplo' if h.largura == 2 }}" style="grid-column: {{ loop.index }}">{% for b in h.abaixo %}{{ bolha(b) }}{% endfor %}</div>
+    {% endfor %}
+  </div>
 </div>
-<div class="rede-wrap" style="margin-top:12px">
-  <svg id="rede" role="img" aria-label="Grafo de projetos, áreas, causas e lacunas"></svg>
-  <aside class="card" id="painel"><h3>Selecione um ponto</h3><p class="small muted">O tamanho do projeto é proporcional ao valor orçado; o das áreas, causas e lacunas, ao número de projetos ligados.</p></aside>
-</div>
-<script type="application/json" id="dados-rede"{% if exportado %} data-exportado="1"{% endif %}>{{ r.rede.para_json()|tojson }}</script>
+<script type="application/json" id="dados-rede">{{ r.rede.ligacoes()|tojson }}</script>
