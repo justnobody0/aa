@@ -132,24 +132,27 @@ nav.abas a[aria-current="page"] { color: var(--text); border-bottom-color: var(-
 .s-verde { background: var(--ok); }
 .meter { background: var(--quote-bg); border-radius: 4px; height: 8px; min-width: 60px; }
 .meter > div { background: var(--bar); border-radius: 4px; height: 8px; }
-/* Mapa da rede: áreas numa linha, projetos acima e abaixo */
-.mapa-scroll { overflow-x: auto; margin-top: 12px; padding: 8px 0 16px; }
-.mapa { position: relative; display: grid; grid-template-rows: auto auto auto; column-gap: 18px; row-gap: 56px; width: max-content; margin: 0 auto; }
-.mapa-linhas { position: absolute; inset: 0; pointer-events: none; overflow: visible; }
-.mapa-linhas .espinha { stroke: var(--accent); stroke-width: 3; opacity: .35; }
-.mapa-linhas .lig { fill: none; stroke: var(--muted); stroke-width: 1.2; stroke-dasharray: 4 4; opacity: .45; }
-.mapa-linhas .lig.principal { stroke: var(--accent); stroke-width: 1.8; stroke-dasharray: none; opacity: .7; }
-.col-acima { grid-row: 1; display: flex; flex-direction: column-reverse; justify-content: flex-start; gap: 18px; align-self: end; }
-.col-abaixo { grid-row: 3; display: flex; flex-direction: column; gap: 18px; }
-.col-acima.duplo, .col-abaixo.duplo { flex-direction: row; flex-wrap: wrap; align-items: flex-start; }
-.col-acima.duplo { flex-wrap: wrap-reverse; align-items: flex-end; }
-.duplo > .bolha { width: calc(50% - 9px); }
-.hub { grid-row: 2; position: relative; z-index: 1; justify-self: center; align-self: center; width: 150px; height: 150px; border-radius: 50%;
-  display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; gap: 2px;
-  background: var(--accent); color: var(--surface); font-size: 12px; padding: 12px; box-shadow: 0 0 0 6px var(--bg); }
-.hub strong { font-size: 16px; }
-.hub.central { width: 180px; height: 180px; }
-.hub.central strong { font-size: 20px; }
+/* Rede: áreas grandes numa linha, projetos pequenos ligados a elas */
+.rede-wrap { display: grid; grid-template-columns: minmax(0, 1fr) 320px; gap: 12px; margin-top: 12px; align-items: start; }
+.rede-scroll { overflow-x: auto; background: var(--surface); border: 1px solid var(--border); border-radius: 10px; }
+#rede { display: block; width: 100%; min-width: 560px; height: auto; }
+#rede line { stroke: var(--muted); stroke-opacity: .35; }
+#rede line.principal { stroke: var(--accent); stroke-opacity: .55; stroke-width: 2; }
+#rede line.espinha { stroke: var(--accent); stroke-opacity: .25; stroke-width: 6; }
+#rede line.ativa { stroke: var(--accent); stroke-opacity: 1; stroke-width: 2.5; }
+#rede .apagado { opacity: .18; }
+#rede circle.area { fill: var(--accent); }
+#rede circle.proj { stroke: var(--surface); stroke-width: 2; cursor: pointer; }
+#rede circle.proj.sel { stroke: var(--text); stroke-width: 3; }
+#rede circle.area { cursor: pointer; }
+#rede .p-vermelho { fill: var(--danger); } #rede .p-amarelo { fill: var(--atencao); } #rede .p-verde { fill: var(--ok); }
+#rede text { font-size: 11px; fill: var(--text); pointer-events: none; }
+#rede text.t-area { fill: var(--surface); font-weight: 650; font-size: 13px; }
+#painel { max-height: 640px; overflow-y: auto; }
+#painel .bolha { border-radius: 16px; }
+.lista-projetos { list-style: none; padding: 0; margin: 0; display: grid; gap: 4px; font-size: 13px; }
+button.link { border: 0; background: none; padding: 0; color: var(--accent); text-decoration: underline; font-size: 13px; text-align: left; }
+@media (max-width: 860px) { .rede-wrap { grid-template-columns: 1fr; } #painel { max-height: none; } }
 .bolha { position: relative; z-index: 1; background: var(--surface); border: 2px solid var(--border); border-radius: 28px; padding: 14px 16px; font-size: 13px; line-height: 1.4; }
 .s-borda-vermelho { border-color: var(--danger); }
 .s-borda-amarelo { border-color: var(--atencao); }
@@ -174,4 +177,3 @@ nav.abas a[aria-current="page"] { color: var(--text); border-bottom-color: var(-
 .bolha .lacunas-bolha { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 8px; }
 .bolha .lacunas-bolha span { font-size: 11px; padding: 1px 7px; border-radius: 999px; background: var(--warn-bg); color: var(--warn); }
 .legenda { display: flex; flex-wrap: wrap; gap: 14px; font-size: 13px; color: var(--muted); margin: 8px 0 0; }
-@media print { .mapa-scroll { overflow: visible; margin: 0; } }

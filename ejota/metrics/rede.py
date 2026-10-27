@@ -1,10 +1,11 @@
-"""A rede da Ejota: as áreas da EJ numa linha horizontal (Marketing no centro)
-e cada projeto como uma bolha ligada à área onde está a maior parte do seu
-trabalho, com ligações mais fracas às outras áreas que também atuam nele.
+"""A rede da Ejota: as áreas da EJ são os nós centrais, numa linha horizontal
+(Marketing no centro), e cada projeto é um nó menor ligado a todas as áreas
+em que atua. A ligação com a área onde está a maior parte do trabalho é a
+principal.
 
-Dentro de cada bolha fica tudo o que o sistema sabe do projeto: saúde,
-números, causas de atraso com a citação da ATA ou do contrato, documentos e
-lacunas. É um mapa calculado a partir dos dados, não um modelo treinado.
+Ao clicar num projeto aparece tudo o que o sistema sabe dele: saúde, números,
+causas de atraso com a citação da ATA ou do contrato, documentos e lacunas.
+É um grafo calculado a partir dos dados, não um modelo treinado.
 """
 
 from __future__ import annotations
@@ -81,6 +82,17 @@ class Rede:
     @property
     def bolhas(self) -> list[Bolha]:
         return [b for h in self.hubs for b in h.bolhas]
+
+    def para_json(self) -> dict:
+        """Dados do grafo para o navegador (o detalhe de cada projeto vai no HTML)."""
+        ids = {h.area: h.id for h in self.hubs}
+        return {
+            "areas": [{"id": h.id, "rotulo": "Sem área" if h.area == SEM_AREA else h.area,
+                       "central": h.area == AREA_CENTRAL, "projetos": len(h.bolhas) + h.secundarios} for h in self.hubs],
+            "projetos": [{"id": b.id, "rotulo": b.indicador.codigo.replace("EJ ", ""), "saude": b.indicador.saude,
+                          "valor": b.indicador.valor_orcado or 0,
+                          "areas": [ids[b.area]] + [ids[a] for a in b.outras_areas if a in ids]} for b in self.bolhas],
+        }
 
     def ligacoes(self) -> list[tuple[str, str, bool]]:
         """(bolha, área, principal?) para desenhar as linhas."""
