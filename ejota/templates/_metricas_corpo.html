@@ -1,0 +1,88 @@
+{% set m = r.metricas %}{% set e = m.entrega %}{% set c = m.comercial %}{% set s = m.por_saude %}
+
+<h2 style="margin-top:0">Entrega</h2>
+<div class="tiles">
+  <div class="tile"><div class="n">{{ e.pontualidade|pct }}</div><div class="l">pontualidade</div><div class="s">{{ e.no_prazo }} de {{ e.avaliaveis }} tarefas avaliáveis no prazo</div></div>
+  <div class="tile"><div class="n">{{ e.conclusao|pct }}</div><div class="l">tarefas concluídas</div><div class="s">{{ e.validadas }} de {{ e.tarefas }} validadas</div></div>
+  <div class="tile"><div class="n">{{ e.atrasadas }}</div><div class="l">tarefas com atraso</div><div class="s">{{ e.atrasadas_abertas }} ainda abertas</div></div>
+  <div class="tile"><div class="n">{{ e.atraso_mediano_dias|int if e.atraso_mediano_dias is not none else '—' }}</div><div class="l">atraso mediano (dias)</div><div class="s">média {{ e.atraso_medio_dias if e.atraso_medio_dias is not none else '—' }}</div></div>
+  <div class="tile"><div class="n">{{ e.cobertura_prazo|pct }}</div><div class="l">tarefas com prazo</div><div class="s">{{ e.cobertura_responsavel|pct }} com responsável</div></div>
+</div>
+
+<h2>Projetos</h2>
+<div class="tiles">
+  <div class="tile"><div class="n">{{ m.projetos|length }}</div><div class="l">projetos em andamento</div></div>
+  <div class="tile"><div class="n"><span class="dot s-vermelho"></span>{{ s.vermelho }}</div><div class="l">críticos</div><div class="s">atraso de 30+ dias ou prazo do TAP vencido</div></div>
+  <div class="tile"><div class="n"><span class="dot s-amarelo"></span>{{ s.amarelo }}</div><div class="l">em atenção</div><div class="s">algum atraso, ou sem prazo para medir</div></div>
+  <div class="tile"><div class="n"><span class="dot s-verde"></span>{{ s.verde }}</div><div class="l">saudáveis</div><div class="s">sem atraso</div></div>
+</div>
+
+<h2>Comercial (orçado na precificação)</h2>
+<div class="tiles">
+  <div class="tile"><div class="n">{{ c.carteira|moeda }}</div><div class="l">carteira orçada</div><div class="s">{{ c.com_preco }} de {{ c.projetos }} projetos com preço legível</div></div>
+  <div class="tile"><div class="n">{{ c.ticket_medio|moeda }}</div><div class="l">ticket médio</div><div class="s">mediana {{ c.ticket_mediano|moeda }}</div></div>
+  <div class="tile"><div class="n">{{ c.valor_por_dia_util|moeda }}</div><div class="l">por dia útil previsto</div><div class="s">{{ c.valor_por_hora_consultor|moeda }} por hora de consultor</div></div>
+  <div class="tile"><div class="n">{{ c.valor_em_atraso|moeda }}</div><div class="l">valor em projetos com atraso</div><div class="s">{{ c.pct_em_atraso|pct }} da carteira</div></div>
+</div>
+<p class="small muted" style="margin-top:-16px">Preço com margem de negociação da Planilha de Precificação. O valor fechado em contrato pode ser menor (desconto, pagamento à vista).</p>
+
+<h2>Por área</h2>
+<div class="table-wrap"><table>
+<thead><tr><th>Área</th><th class="num">Projetos</th><th class="num">Tarefas</th><th>Pontualidade</th><th class="num">Com atraso</th><th class="num">Dias úteis orçados</th><th class="num">Valor orçado (rateado)</th></tr></thead>
+<tbody>
+{% for a in m.areas %}
+<tr>
+  <td>{{ a.area }}</td>
+  <td class="num">{{ a.projetos }}</td>
+  <td class="num">{{ a.entrega.tarefas }}</td>
+  <td>{% if a.entrega.pontualidade is not none %}<div style="display:flex;gap:8px;align-items:center"><div class="meter" style="flex:1"><div style="width:{{ a.entrega.pontualidade }}%"></div></div><span class="num">{{ a.entrega.pontualidade|pct }}</span></div>{% else %}<span class="muted">sem prazo</span>{% endif %}</td>
+  <td class="num">{{ a.entrega.atrasadas }}</td>
+  <td class="num">{{ a.dias_uteis_previstos or '—' }}</td>
+  <td class="num">{{ a.valor_orcado|moeda if a.valor_orcado else '—' }}</td>
+</tr>
+{% endfor %}
+</tbody></table></div>
+<p class="small muted">Área da tarefa = lista do ClickUp. Valor por área = preço do projeto dividido pelos dias úteis de cada etapa da precificação.</p>
+
+<h2>Projeto a projeto</h2>
+<div class="table-wrap"><table>
+<thead><tr><th>Projeto</th><th>Saúde</th><th>Áreas</th><th class="num">Tarefas</th><th class="num">Concluídas</th><th class="num">Pontualidade</th><th class="num">Maior atraso</th><th class="num">Valor orçado</th><th class="num">Dias úteis</th><th class="num">R$ / dia útil</th></tr></thead>
+<tbody>
+{% for p in m.projetos|sort(attribute='analise.maior_atraso_dias', reverse=true) %}
+<tr>
+  <td>{% if exportado %}{{ p.analise.projeto.nome }}{% else %}<a href="/projeto/{{ p.slug }}">{{ p.analise.projeto.nome }}</a>{% endif %}</td>
+  <td title="{{ p.motivo_saude }}"><span class="dot s-{{ p.saude }}"></span>{{ p.motivo_saude }}</td>
+  <td class="small">{{ p.areas|join(', ') or '—' }}</td>
+  <td class="num">{{ p.entrega.tarefas }}</td>
+  <td class="num">{{ p.entrega.conclusao|pct }}</td>
+  <td class="num">{{ p.entrega.pontualidade|pct }}</td>
+  <td class="num">{{ p.analise.maior_atraso_dias }} d</td>
+  <td class="num">{{ p.valor_orcado|moeda if p.valor_orcado else ('erro' if p.analise.projeto.comercial else '—') }}</td>
+  <td class="num">{{ p.dias_uteis_previstos or '—' }}</td>
+  <td class="num">{{ p.valor_por_dia_util|moeda if p.valor_por_dia_util else '—' }}</td>
+</tr>
+{% endfor %}
+</tbody></table></div>
+
+<div class="grid2" style="margin-top:12px">
+  <div class="card">
+    <h3>Causas de atraso (todas com evidência)</h3>
+    {% set maximo = (m.causas|map(attribute=1)|max) if m.causas else 1 %}
+    <div class="bars">
+    {% for cat, n in m.causas %}
+      <div class="bar-row"><span>{{ cat }}</span><div class="bar-track"><div class="bar-fill" style="width: {{ (100 * n / maximo)|round }}%"></div></div><span class="num">{{ n }}</span></div>
+    {% else %}<p class="muted small">Nenhuma causa com evidência.</p>{% endfor %}
+    </div>
+  </div>
+  <div class="card">
+    <h3>Perfil da carteira</h3>
+    <p class="small" style="margin:0 0 4px"><strong>Porte do cliente:</strong> {% for k, n in c.por_porte %}{{ k }} ({{ n }}){{ ', ' if not loop.last }}{% else %}—{% endfor %}</p>
+    <p class="small" style="margin:0"><strong>Dificuldade orçada:</strong> {% for k, n in c.por_dificuldade %}{{ k }} ({{ n }}){{ ', ' if not loop.last }}{% else %}—{% endfor %}</p>
+    <p class="small muted" style="margin:8px 0 0">{{ c.projetos - c.com_precificacao }} projeto(s) sem planilha de precificação encontrada; {{ c.com_precificacao - c.com_preco }} com preço ilegível na planilha.</p>
+  </div>
+</div>
+
+<p class="small muted" style="margin-top:24px">
+  Pontualidade = tarefas no prazo ÷ tarefas cujo prazo já venceu ou que já foram fechadas. "Finalizado" sem data de entrega fica fora da conta.
+  Gerado em {{ r.gerado_em.strftime('%d/%m/%Y %H:%M') }}.
+</p>

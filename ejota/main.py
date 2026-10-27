@@ -1,4 +1,4 @@
-"""Aplicação web: login + relatório + exportação."""
+"""Aplicação web: login + métricas + rede + relatório de atrasos + exportação."""
 
 from __future__ import annotations
 
@@ -26,6 +26,16 @@ class Exigelogin(Exception):
     pass
 
 
+def _moeda(v: float | None) -> str:
+    if v is None:
+        return "—"
+    return "R$ " + f"{v:,.0f}".replace(",", ".")
+
+
+def _pct(v: float | None) -> str:
+    return "—" if v is None else f"{v:.0f}%"
+
+
 def criar_app(settings: Settings | None = None) -> FastAPI:
     settings = settings or get_settings()
     setup_logging(settings.log_level)
@@ -48,6 +58,8 @@ def criar_app(settings: Settings | None = None) -> FastAPI:
     )
     app.mount("/static", StaticFiles(directory=BASE / "static"), name="static")
     templates = Jinja2Templates(directory=BASE / "templates")
+    templates.env.filters["moeda"] = _moeda
+    templates.env.filters["pct"] = _pct
 
     cache: dict[str, Relatorio] = {}
     trava = threading.Lock()
@@ -104,7 +116,15 @@ def criar_app(settings: Settings | None = None) -> FastAPI:
         return RedirectResponse("/login", status_code=303)
 
     @app.get("/", response_class=HTMLResponse)
-    def visao_geral(request: Request, _: str = Depends(exigir_login)):
+    def metricas(request: Request, _: str = Depends(exigir_login)):
+        return templates.TemplateResponse(request, "metricas.html", {"r": relatorio_atual()})
+
+    @app.get("/rede", response_class=HTMLResponse)
+    def rede(request: Request, _: str = Depends(exigir_login)):
+        return templates.TemplateResponse(request, "rede.html", {"r": relatorio_atual()})
+
+    @app.get("/atrasos", response_class=HTMLResponse)
+    def atrasos(request: Request, _: str = Depends(exigir_login)):
         return templates.TemplateResponse(request, "overview.html", {"r": relatorio_atual()})
 
     @app.post("/atualizar")
@@ -127,6 +147,15 @@ def criar_app(settings: Settings | None = None) -> FastAPI:
         resp = templates.TemplateResponse(request, "export.html", {"r": r, "css": css})
         nome = f"relatorio-atrasos-{r.data_referencia.isoformat()}.html"
         resp.headers["Content-Disposition"] = f'attachment; filename="{nome}"'
+        return resp
+
+    @app.get("/exportar/painel.html", response_class=HTMLResponse)
+    def exportar_painel(request: Request, _: str = Depends(exigir_login)):
+        r = relatorio_atual()
+        css = (BASE / "static" / "style.css").read_text(encoding="utf-8")
+        js = (BASE / "static" / "rede.js").read_text(encoding="utf-8").replace("</", "<\\/")
+        resp = templates.TemplateResponse(request, "export_painel.html", {"r": r, "css": css, "js": js})
+        resp.headers["Content-Disposition"] = f'attachment; filename="rede-ejota-{r.data_referencia.isoformat()}.html"'
         return resp
 
     @app.get("/exportar/relatorio.csv")

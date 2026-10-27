@@ -6,7 +6,8 @@
 
 Formato de `projects.json`: veja `data/fake/projects.json`. Campos opcionais
 para dados reais: `status`, `fechada_em`, `finalizada_em`, `url` (tarefa,
-projeto e documento) e `historico_completo`.
+projeto e documento), `historico_completo` e `comercial` (a Planilha de
+Precificação: preços, dias úteis e etapas previstas).
 """
 
 from __future__ import annotations
@@ -15,7 +16,7 @@ import json
 from datetime import date, datetime
 from pathlib import Path
 
-from ejota.domain import Documento, MudancaStatus, Projeto, Status, Tarefa, TipoDocumento
+from ejota.domain import Comercial, Documento, EtapaPrevista, MudancaStatus, Projeto, Status, Tarefa, TipoDocumento
 
 DATA_DIR = Path(__file__).resolve().parent.parent / "data" / "fake"
 
@@ -40,6 +41,21 @@ class FonteArquivo:
             tarefas=[self._tarefa(t) for t in p["tarefas"]],
             documentos=[self._documento(d) for d in p["documentos"]],
             url=p.get("url") or f"#ficticio/clickup/{slug}",
+            comercial=self._comercial(p["comercial"]) if p.get("comercial") else None,
+        )
+
+    @staticmethod
+    def _comercial(c: dict) -> Comercial:
+        return Comercial(
+            preco_sem_margem=c.get("preco_sem_margem"),
+            preco_com_margem=c.get("preco_com_margem"),
+            dias_uteis=c.get("dias_uteis"),
+            horas_consultores=c.get("horas_consultores"),
+            horas_gerente=c.get("horas_gerente"),
+            dificuldade=c.get("dificuldade"),
+            porte=c.get("porte"),
+            etapas=[EtapaPrevista(nome, area, dias) for nome, area, dias in c.get("etapas", [])],
+            url=c.get("url", ""),
         )
 
     def _tarefa(self, t: dict) -> Tarefa:

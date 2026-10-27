@@ -26,8 +26,14 @@ def test_login_errado_e_bloqueio(client):
     assert r.status_code == 401 and "Muitas tentativas" in r.text
 
 
-def test_visao_geral_e_detalhe(logado):
-    r = logado.get("/")
+def test_metricas_rede_e_atrasos(logado):
+    m = logado.get("/")
+    assert m.status_code == 200 and "Pontualidade".lower() in m.text.lower() and "carteira orçada" in m.text
+    assert "fictícios" in m.text and "Padaria Aurora" in m.text
+    rede = logado.get("/rede")
+    assert rede.status_code == 200 and 'id="dados-rede"' in rede.text and "area:Processos" in rede.text
+    assert logado.get("/static/rede.js").status_code == 200
+    r = logado.get("/atrasos")
     assert r.status_code == 200
     assert "Por que os projetos atrasaram" in r.text and "fictícios" in r.text
     assert "Padaria Aurora" in r.text
@@ -107,3 +113,11 @@ def test_configurar_local_cria_login_uma_vez(tmp_path):
     antes = env.read_text()
     configurar_local(env, senha_arq)  # segunda vez não troca a senha
     assert env.read_text() == antes
+
+
+def test_exportar_painel_autocontido(logado):
+    r = logado.get("/exportar/painel.html")
+    assert r.status_code == 200 and "attachment" in r.headers["content-disposition"]
+    assert 'id="dados-rede"' in r.text and "carteira orçada" in r.text and "<style>" in r.text
+    assert "/static/" not in r.text
+    assert "&#34;" not in r.text.split("</style>")[0]  # CSS sem escape de HTML

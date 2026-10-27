@@ -1,0 +1,13 @@
+<p class="small muted" style="margin-top:0">Cada projeto se liga às áreas que executam, às causas de atraso com evidência, ao porte do cliente e às lacunas de dados. Clique num ponto para ver as métricas dele; arraste para reorganizar.</p>
+<div class="legenda no-print" id="filtros">
+  <label><input type="checkbox" value="area" checked> <span class="dot n-area" style="background:var(--accent)"></span>áreas</label>
+  <label><input type="checkbox" value="causa" checked> <span class="dot" style="background:var(--causa)"></span>causas</label>
+  <label><input type="checkbox" value="perfil" checked> <span class="dot" style="background:var(--perfil)"></span>porte do cliente</label>
+  <label><input type="checkbox" value="lacuna" checked> <span class="dot" style="background:var(--muted)"></span>lacunas</label>
+  <span><span class="dot s-vermelho"></span>projeto crítico <span class="dot s-amarelo" style="margin-left:6px"></span>atenção <span class="dot s-verde" style="margin-left:6px"></span>saudável</span>
+</div>
+<div class="rede-wrap" style="margin-top:12px">
+  <svg id="rede" role="img" aria-label="Grafo de projetos, áreas, causas e lacunas"></svg>
+  <aside class="card" id="painel"><h3>Selecione um ponto</h3><p class="small muted">O tamanho do projeto é proporcional ao valor orçado; o das áreas, causas e lacunas, ao número de projetos ligados.</p></aside>
+</div>
+<script type="application/json" id="dados-rede"{% if exportado %} data-exportado="1"{% endif %}>{{ r.rede.para_json()|tojson }}</script>

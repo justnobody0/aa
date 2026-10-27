@@ -1,12 +1,19 @@
 # Rede neural da Ejota
 
 Sistema fechado que lê os projetos em andamento (ClickUp) e os documentos de cada
-projeto (Google Drive) e gera, para o diretor de projetos e comercial, um relatório
-que explica **por que** cada projeto atrasou, com a evidência citada (documento e trecho).
+projeto (Google Drive) e entrega, para o diretor de projetos e comercial:
+
+- **Métricas** da carteira: entrega (pontualidade, conclusão, atraso), saúde de cada
+  projeto, indicadores comerciais (carteira orçada, ticket, R$ por dia útil) e visão por área;
+- a **Rede**: um grafo que liga cada projeto às áreas, causas de atraso, porte do cliente
+  e lacunas de dados, com as métricas de cada ponto;
+- o relatório de **atrasos e causas**, que explica por que cada projeto atrasou, com a
+  evidência citada (documento e trecho).
 
 > **Estado atual:** o aplicativo roda com dados **fictícios**. Os dados reais
-> (ClickUp e Drive) já foram testados com o projeto EJ 26-127 a partir de uma cópia
-> local, que nunca vai para o git. A leitura direta pelas APIs é a Etapa 7.
+> (ClickUp, ATAs, contratos e planilhas de precificação dos 19 projetos) já foram
+> testados a partir de uma cópia local, que nunca vai para o git. A leitura direta
+> pelas APIs é a Etapa 7.
 
 ## Abrir no navegador com um clique (GitHub Codespaces)
 
@@ -47,11 +54,15 @@ pytest                          # roda os testes
 
 ## O que a página mostra
 
-- **Visão geral**: projetos atrasados, causa principal de cada um com nível de confiança
+- **Métricas** (página inicial): indicadores de entrega, semáforo de saúde por projeto
+  (regra fixa: crítico = atraso de 30+ dias ou prazo do TAP vencido), comercial a partir da
+  Planilha de Precificação (preço com margem de negociação) e tabela por área.
+- **Rede**: grafo clicável; o tamanho do projeto é o valor orçado, a cor é a saúde.
+- **Atrasos e causas**: projetos atrasados, causa principal de cada um com nível de confiança
   e a principal evidência, comparação entre projetos, causas por categoria e tempo médio em cada status.
 - **Detalhe do projeto**: todas as causas (principal e secundárias), cada citação com link
   para o documento, tabela de tarefas (situação, dias de atraso, dias por status) e lacunas de dados.
-- **Exportação**: HTML único (abre offline), CSV (abre no Excel/Sheets) e "Imprimir / PDF".
+- **Exportação**: painel (métricas + rede) em HTML único, relatório de atrasos em HTML único (abrem offline), CSV (abre no Excel/Sheets) e "Imprimir / PDF".
 
 ## Regras
 
@@ -98,6 +109,7 @@ ejota/
   domain.py            modelo de dados (já prevê Consultor e Necessidade p/ fases futuras)
   connectors/          fontes de dados: fictícia (pronta), ClickUp e Drive (Etapa 7)
   engine/delays.py     regras de atraso, tempo em status, lacunas
+  metrics/             indicadores da carteira e o grafo da rede
   documents/           quebra de documentos em trechos citáveis
   analysis/            heurística, Claude, pseudonimização, verificador
   report/              montagem do relatório e CSV
@@ -112,4 +124,4 @@ tests/                 testes automáticos
 8. Um projeto real, **com autorização da diretoria**.
 9. Todos os projetos e deploy (servidor a definir; tudo já está em contêiner).
 
-Fases futuras (fora do MVP): grafo visual, formulário de necessidade e repertório de consultores.
+Fases futuras: formulário de necessidade, repertório de consultores e métricas por consultor (só com aval da diretoria).

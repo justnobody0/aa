@@ -103,12 +103,39 @@ class Trecho:
 
 
 @dataclass
+class EtapaPrevista:
+    nome: str
+    area: str
+    dias_uteis: int
+
+
+@dataclass
+class Comercial:
+    """O que foi orçado na Planilha de Precificação do projeto.
+
+    O valor fechado no contrato pode ser diferente (desconto, à vista); aqui
+    fica o orçamento, que é o que existe de forma padronizada para todos.
+    """
+
+    preco_sem_margem: float | None  # None = planilha com erro (ex.: #REF!)
+    preco_com_margem: float | None
+    dias_uteis: int | None
+    horas_consultores: float | None = None
+    horas_gerente: float | None = None
+    dificuldade: str | None = None
+    porte: str | None = None
+    etapas: list[EtapaPrevista] = field(default_factory=list)
+    url: str = ""
+
+
+@dataclass
 class Projeto:
     codigo: str  # "EJ 26-901"
     cliente: str
     tarefas: list[Tarefa]
     documentos: list[Documento]
     url: str = ""
+    comercial: Comercial | None = None  # None = sem planilha de precificação encontrada
 
     @property
     def nome(self) -> str:

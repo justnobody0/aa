@@ -1,0 +1,23 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<title>Rede Ejota</title>
+<style>{{ css|safe }}</style>
+</head>
+<body>
+{% set exportado = true %}
+<div class="wrap">
+<header class="top"><div><h1>Rede neural da Ejota</h1>
+<div class="meta">Referência {{ r.data_referencia.strftime('%d/%m/%Y') }} · fonte: {{ r.fonte }} · cópia exportada, não se atualiza sozinha</div></div></header>
+{% if r.fonte == 'dados fictícios' %}<div class="banner ficticio">Ambiente de teste: todos os projetos, clientes, pessoas e valores abaixo são <strong>fictícios</strong>.</div>{% endif %}
+<h2 style="margin-top:0">Rede</h2>
+{% include "_rede_corpo.html" %}
+<h2>Métricas</h2>
+{% include "_metricas_corpo.html" %}
+</div>
+<script>{{ js|safe }}</script>
+</body>
+</html>

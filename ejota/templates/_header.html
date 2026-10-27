@@ -1,14 +1,20 @@
 <header class="top">
   <div>
     <h1><a href="/" style="color:inherit;text-decoration:none">Rede neural da Ejota</a></h1>
-    <div class="meta">Relatório de atrasos com causa · referência {{ r.data_referencia.strftime('%d/%m/%Y') }} · fonte: {{ r.fonte }}</div>
+    <div class="meta">Referência {{ r.data_referencia.strftime('%d/%m/%Y') }} · fonte: {{ r.fonte }}</div>
   </div>
   <div class="actions">
     <form class="inline" method="post" action="/atualizar"><button type="submit">Atualizar dados</button></form>
-    <a class="btn" href="/exportar/relatorio.html">Baixar HTML</a>
+    <a class="btn" href="/exportar/painel.html">Baixar painel</a>
+    <a class="btn" href="/exportar/relatorio.html">Baixar atrasos</a>
     <a class="btn" href="/exportar/relatorio.csv">Baixar CSV</a>
     <button type="button" onclick="window.print()">Imprimir / PDF</button>
     <form class="inline" method="post" action="/logout"><button type="submit">Sair</button></form>
   </div>
 </header>
+<nav class="abas no-print">
+  <a href="/" {% if aba == 'metricas' %}aria-current="page"{% endif %}>Métricas</a>
+  <a href="/rede" {% if aba == 'rede' %}aria-current="page"{% endif %}>Rede</a>
+  <a href="/atrasos" {% if aba == 'atrasos' %}aria-current="page"{% endif %}>Atrasos e causas</a>
+</nav>
 {% if r.fonte == 'dados fictícios' %}<div class="banner ficticio">Ambiente de teste: todos os projetos, clientes, pessoas e valores abaixo são <strong>fictícios</strong>.</div>{% endif %}

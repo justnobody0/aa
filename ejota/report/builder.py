@@ -14,6 +14,8 @@ from ejota.config import Settings
 from ejota.connectors import get_source
 from ejota.domain import Categoria, Causa, Status
 from ejota.engine.delays import AnaliseProjeto, analisar_projeto
+from ejota.metrics.indicadores import Metricas, calcular_metricas
+from ejota.metrics.rede import Rede, montar_rede
 
 log = logging.getLogger(__name__)
 
@@ -58,6 +60,8 @@ class Relatorio:
     projetos: list[RelatorioProjeto]
     tarefas_teste_ignoradas: int = 0
     causas_por_categoria: list[tuple[str, int]] = field(default_factory=list)
+    metricas: Metricas | None = None
+    rede: Rede | None = None
 
     @property
     def atrasados(self) -> list[RelatorioProjeto]:
@@ -91,6 +95,8 @@ def gerar_relatorio(settings: Settings) -> Relatorio:
     itens.sort(key=lambda p: (not p.analise.atrasado, -p.analise.soma_dias_atraso, p.codigo))
     contagem = Counter(p.causa_principal.categoria.value for p in itens if p.causa_principal)
     por_categoria = [(c.value, contagem.get(c.value, 0)) for c in Categoria]
+    causas = {p.codigo: p.causas.causas for p in itens if p.causas}
+    metricas = calcular_metricas([p.analise for p in itens], causas)
     log.info("Relatório gerado: %d projetos, %d atrasados", len(itens), sum(p.analise.atrasado for p in itens))
     return Relatorio(
         gerado_em=datetime.now(),
@@ -99,6 +105,8 @@ def gerar_relatorio(settings: Settings) -> Relatorio:
         projetos=itens,
         tarefas_teste_ignoradas=sum(p.analise.tarefas_teste_ignoradas for p in itens),
         causas_por_categoria=por_categoria,
+        metricas=metricas,
+        rede=montar_rede(metricas, causas),
     )
 
 
