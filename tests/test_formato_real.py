@@ -80,3 +80,12 @@ def test_fechamento_em_lote_e_datas_incoerentes_do_tap():
     lacunas = analisar_projeto(projeto, HOJE).lacunas
     assert lacunas.fechamentos_em_lote == 2
     assert lacunas.datas_do_tap_incoerentes
+
+
+def test_tarefa_com_codigo_de_outro_projeto():
+    from ejota.engine.delays import codigo_divergente
+
+    assert codigo_divergente("26-183 | 2. Mapeamento de Processos", "EJ 26-163")
+    assert not codigo_divergente("26-163 | 1. Imersão", "EJ 26-163")
+    assert not codigo_divergente("EJ 26- 169 | Imersão Design", "EJ 26-169")
+    assert not codigo_divergente("Mapa Jornada do Aluno", "EJ 26-163")

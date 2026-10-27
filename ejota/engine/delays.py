@@ -25,6 +25,7 @@ _DATA = r"(\d{2})/(\d{2})/(\d{4})"
 # Modelo simples ("Prazo final do projeto: dd/mm/aaaa") ou o TAP real da EJ, que
 # tem uma "Previsão de fim" por frente do projeto.
 _FIM_TAP = re.compile(r"(?:prazo final do projeto|previs[ãa]o de fim):\s*" + _DATA, re.IGNORECASE)
+_CODIGO_NO_NOME = re.compile(r"\b(\d{2})-\s?(\d{3})\b")
 _INICIO_TAP = re.compile(r"in[íi]cio:\s*" + _DATA, re.IGNORECASE)
 
 DOCUMENTOS_ESPERADOS = (TipoDocumento.TAP, TipoDocumento.ATA)
@@ -74,6 +75,8 @@ class Lacunas:
     # em que a data do ClickUp não é a data real da validação.
     fechamentos_em_lote: int = 0
     datas_do_tap_incoerentes: bool = False
+    # Tarefas cujo nome traz o código de outro projeto (ex.: "26-183 | ..." na pasta do 26-163).
+    codigo_divergente: list[str] = field(default_factory=list)
 
     @property
     def total(self) -> int:
@@ -86,6 +89,7 @@ class Lacunas:
             + self.entregas_sem_data
             + self.fechamentos_em_lote
             + int(self.datas_do_tap_incoerentes)
+            + len(self.codigo_divergente)
         )
 
 
@@ -206,6 +210,11 @@ def prazo_do_projeto(projeto: Projeto) -> tuple[date | None, bool]:
     return None, False
 
 
+def codigo_divergente(nome_tarefa: str, codigo_projeto: str) -> bool:
+    proprio = _CODIGO_NO_NOME.search(codigo_projeto)
+    return any(m.groups() != proprio.groups() for m in _CODIGO_NO_NOME.finditer(nome_tarefa)) if proprio else False
+
+
 def analisar_projeto(projeto: Projeto, hoje: date) -> AnaliseProjeto:
     reais = [t for t in projeto.tarefas if not eh_tarefa_de_teste(t.nome)]
     analises = [analisar_tarefa(t, hoje) for t in reais]
@@ -223,5 +232,6 @@ def analisar_projeto(projeto: Projeto, hoje: date) -> AnaliseProjeto:
         entregas_sem_data=sum(1 for a in analises if a.situacao == Situacao.FINALIZADO_SEM_DATA),
         fechamentos_em_lote=sum(n for n in fechamentos.values() if n > 1),
         datas_do_tap_incoerentes=tap_incoerente,
+        codigo_divergente=[t.nome for t in reais if codigo_divergente(t.nome, projeto.codigo)],
     )
     return AnaliseProjeto(projeto, analises, len(projeto.tarefas) - len(reais), prazo, lacunas, hoje)

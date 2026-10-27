@@ -65,6 +65,7 @@
   {% if l.sem_prazo_do_projeto %}<li>Prazo do projeto não encontrado no Termo de Abertura</li>{% endif %}
   {% if l.datas_do_tap_incoerentes %}<li>Datas do Termo de Abertura incoerentes (previsão de fim antes do início)</li>{% endif %}
   {% if l.entregas_sem_data %}<li>{{ l.entregas_sem_data }} tarefa(s) "finalizado" sem data de entrega registrada</li>{% endif %}
+  {% for n in l.codigo_divergente %}<li>Tarefa com código de outro projeto no nome: {{ n }}</li>{% endfor %}
   {% if l.fechamentos_em_lote %}<li>{{ l.fechamentos_em_lote }} tarefa(s) fechada(s) no mesmo instante que outras (atualização em lote: a data pode não ser a da validação real)</li>{% endif %}
   {% for d in l.documentos_ausentes %}<li>Documento ausente: {{ d }}</li>{% endfor %}
   {% for d in l.documentos_ilegiveis %}<li>Documento ilegível (ex.: PDF escaneado): {{ d }}</li>{% endfor %}
