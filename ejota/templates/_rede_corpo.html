@@ -10,7 +10,9 @@
     <div><dt>Tarefas</dt><dd>{{ p.entrega.tarefas }}</dd></div>
     <div><dt>Concluídas</dt><dd>{{ p.entrega.conclusao|pct }}</dd></div>
     <div><dt>Maior atraso</dt><dd>{{ a.maior_atraso_dias }} d</dd></div>
-    <div><dt>Orçado</dt><dd>{{ p.valor_orcado|moeda if p.valor_orcado else '—' }}</dd></div>
+    <div><dt>Contrato</dt><dd>{{ p.valor_contratado|moeda if p.valor_contratado else '—' }}{{ '*' if p.contrato and p.contrato.estimado }}</dd></div>
+    <div><dt>Vigência</dt><dd>{{ p.dias_uteis_previstos ~ ' d.u.' if p.dias_uteis_previstos else '—' }}</dd></div>
+    <div><dt>Desconto</dt><dd>{{ p.desconto|pct if p.desconto is not none else '—' }}</dd></div>
   </dl>
   <p class="tags">Áreas: <strong>{{ b.area }}</strong>{% for a in b.outras_areas %}, {{ a }}{% endfor %}</p>
   {% if b.causas %}
@@ -25,12 +27,12 @@
   </ul>
   {% elif a.atrasado %}<p class="vazio">Atrasado, sem causa com evidência (ATA sem registro).</p>
   {% endif %}
-  {% if b.documentos %}<p class="docs">{% for d in b.documentos %}<a href="{{ d.url }}" target="_blank" rel="noopener">{{ d.tipo.value.split(' ')[0] if d.tipo.name in ('ATA', 'TAP') else d.tipo.value }}</a>{% endfor %}</p>{% endif %}
+  {% if b.documentos or p.contrato %}<p class="docs">{% if p.contrato and p.contrato.url %}<a href="{{ p.contrato.url }}" target="_blank" rel="noopener">{{ 'Nota fiscal' if p.contrato.estimado else 'Contrato' }}</a>{% endif %}{% for d in b.documentos if d.tipo.name != 'CONTRATO' or not p.contrato %}<a href="{{ d.url }}" target="_blank" rel="noopener">{{ d.tipo.value.split(' ')[0] if d.tipo.name in ('ATA', 'TAP') else d.tipo.value }}</a>{% endfor %}</p>{% endif %}
   {% if b.lacunas %}<p class="lacunas-bolha">{% for l in b.lacunas %}<span>{{ l }}</span>{% endfor %}</p>{% endif %}
 </article>
 {% endmacro %}
 <p class="small muted" style="margin-top:0">As áreas da EJ são os nós grandes, com Marketing no centro. Cada projeto é um nó pequeno, ligado a todas as áreas em que atua (linha mais forte na área principal). Clique num projeto para ver tudo sobre ele, ou numa área para ver os projetos dela.</p>
-<p class="legenda"><span><span class="dot s-vermelho"></span>crítico</span><span><span class="dot s-amarelo"></span>atenção</span><span><span class="dot s-verde"></span>saudável</span><span>tamanho do projeto = valor orçado</span></p>
+<p class="legenda"><span><span class="dot s-vermelho"></span>crítico</span><span><span class="dot s-amarelo"></span>atenção</span><span><span class="dot s-verde"></span>saudável</span><span>tamanho do projeto = valor do contrato</span></p>
 <div class="rede-wrap">
   <div class="rede-scroll"><svg id="rede" role="img" aria-label="Rede de áreas e projetos"></svg></div>
   <aside class="card" id="painel">
@@ -38,7 +40,7 @@
     {% for h in r.rede.hubs %}
     <div id="det-{{ h.id }}" hidden>
       <h3>{{ 'Sem área no ClickUp' if h.area == 'Geral' else h.area }}</h3>
-      {% if h.indicador %}<p class="small muted" style="margin:0 0 8px">{{ h.indicador.entrega.tarefas }} tarefas · pontualidade {{ h.indicador.entrega.pontualidade|pct }}{% if h.indicador.valor_orcado %} · {{ h.indicador.valor_orcado|moeda }} orçados{% endif %}</p>{% endif %}
+      {% if h.indicador %}<p class="small muted" style="margin:0 0 8px">{{ h.indicador.entrega.tarefas }} tarefas · pontualidade {{ h.indicador.entrega.pontualidade|pct }}{% if h.indicador.valor %} · {{ h.indicador.valor|moeda }} contratados (rateio){% endif %}</p>{% endif %}
       <ul class="lista-projetos">
       {% for b in r.rede.bolhas if b.area == h.area or h.area in b.outras_areas %}
         <li><button type="button" class="link" data-abrir="{{ b.id }}"><span class="dot s-{{ b.indicador.saude }}"></span>{{ b.analise.projeto.nome }}</button>{{ '' if b.area == h.area else ' (apoio)' }}</li>

@@ -99,9 +99,9 @@
       var c = el("circle", { cx: p.x, cy: p.y, r: p.r, "class": "proj p-" + p.saude + (sel === p ? " sel" : "") + apagar(p.id), tabindex: 0 });
       c.addEventListener("click", function () { selecionar(p); });
       c.addEventListener("keydown", function (ev) { if (ev.key === "Enter" || ev.key === " ") { ev.preventDefault(); selecionar(p); } });
-      el("title", {}, c).textContent = p.rotulo;
+      el("title", {}, c).textContent = p.rotulo + " · " + p.cliente;
       var t = el("text", { x: p.x, y: p.y + p.r + 12, "text-anchor": "middle", "class": apagar(p.id).trim() });
-      t.textContent = p.rotulo;
+      t.textContent = p.cliente.length > 16 ? p.cliente.slice(0, 15) + "…" : p.cliente;
     });
   }
 

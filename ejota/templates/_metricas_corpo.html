@@ -17,18 +17,19 @@
   <div class="tile"><div class="n"><span class="dot s-verde"></span>{{ s.verde }}</div><div class="l">saudáveis</div><div class="s">sem atraso</div></div>
 </div>
 
-<h2>Comercial (orçado na precificação)</h2>
+<h2>Comercial (valor dos contratos)</h2>
 <div class="tiles">
-  <div class="tile"><div class="n">{{ c.carteira|moeda }}</div><div class="l">carteira orçada</div><div class="s">{{ c.com_preco }} de {{ c.projetos }} projetos com preço legível</div></div>
+  <div class="tile"><div class="n">{{ c.carteira|moeda }}</div><div class="l">carteira contratada</div><div class="s">{{ c.com_contrato }} contratos{% if c.estimados %} + {{ c.estimados }} estimado(s){% endif %} de {{ c.projetos }} projetos</div></div>
   <div class="tile"><div class="n">{{ c.ticket_medio|moeda }}</div><div class="l">ticket médio</div><div class="s">mediana {{ c.ticket_mediano|moeda }}</div></div>
-  <div class="tile"><div class="n">{{ c.valor_por_dia_util|moeda }}</div><div class="l">por dia útil previsto</div><div class="s">{{ c.valor_por_hora_consultor|moeda }} por hora de consultor</div></div>
+  <div class="tile"><div class="n">{{ c.valor_por_dia_util|moeda }}</div><div class="l">por dia útil de vigência</div><div class="s">carteira ÷ dias úteis dos contratos</div></div>
+  <div class="tile"><div class="n">{{ c.desconto_medio|pct }}</div><div class="l">desconto sobre o orçado</div><div class="s">em {{ c.projetos_com_desconto }} projetos com contrato e precificação</div></div>
   <div class="tile"><div class="n">{{ c.valor_em_atraso|moeda }}</div><div class="l">valor em projetos com atraso</div><div class="s">{{ c.pct_em_atraso|pct }} da carteira</div></div>
 </div>
-<p class="small muted" style="margin-top:-16px">Preço com margem de negociação da Planilha de Precificação. O valor fechado em contrato pode ser menor (desconto, pagamento à vista).</p>
+<p class="small muted" style="margin-top:-16px">Valor da cláusula 3 de cada Documento Contratual no Drive. Desconto = quanto o contrato ficou abaixo do preço com margem da Planilha de Precificação.{% if c.estimados %} * Estimado: sem contrato no Drive, valor deduzido da nota fiscal.{% endif %}</p>
 
 <h2>Por área</h2>
 <div class="table-wrap"><table>
-<thead><tr><th>Área</th><th class="num">Projetos</th><th class="num">Tarefas</th><th>Pontualidade</th><th class="num">Com atraso</th><th class="num">Dias úteis orçados</th><th class="num">Valor orçado (rateado)</th></tr></thead>
+<thead><tr><th>Área</th><th class="num">Projetos</th><th class="num">Tarefas</th><th>Pontualidade</th><th class="num">Com atraso</th><th class="num">Dias úteis orçados</th><th class="num">Valor contratado (rateado)</th></tr></thead>
 <tbody>
 {% for a in m.areas %}
 <tr>
@@ -38,15 +39,15 @@
   <td>{% if a.entrega.pontualidade is not none %}<div style="display:flex;gap:8px;align-items:center"><div class="meter" style="flex:1"><div style="width:{{ a.entrega.pontualidade }}%"></div></div><span class="num">{{ a.entrega.pontualidade|pct }}</span></div>{% else %}<span class="muted">sem prazo</span>{% endif %}</td>
   <td class="num">{{ a.entrega.atrasadas }}</td>
   <td class="num">{{ a.dias_uteis_previstos or '—' }}</td>
-  <td class="num">{{ a.valor_orcado|moeda if a.valor_orcado else '—' }}</td>
+  <td class="num">{{ a.valor|moeda if a.valor else '—' }}</td>
 </tr>
 {% endfor %}
 </tbody></table></div>
-<p class="small muted">Área da tarefa = lista do ClickUp. Valor por área = preço do projeto dividido pelos dias úteis de cada etapa da precificação.</p>
+<p class="small muted">Área da tarefa = lista do ClickUp. Valor por área = valor do contrato dividido pelos dias úteis de cada etapa da precificação (sem precificação, em partes iguais entre as áreas do ClickUp).</p>
 
 <h2>Projeto a projeto</h2>
 <div class="table-wrap"><table>
-<thead><tr><th>Projeto</th><th>Saúde</th><th>Áreas</th><th class="num">Tarefas</th><th class="num">Concluídas</th><th class="num">Pontualidade</th><th class="num">Maior atraso</th><th class="num">Valor orçado</th><th class="num">Dias úteis</th><th class="num">R$ / dia útil</th></tr></thead>
+<thead><tr><th>Projeto</th><th>Saúde</th><th>Áreas</th><th class="num">Tarefas</th><th class="num">Concluídas</th><th class="num">Pontualidade</th><th class="num">Maior atraso</th><th class="num">Contrato</th><th class="num">Desconto</th><th class="num">Vigência (d.u.)</th><th class="num">R$ / dia útil</th></tr></thead>
 <tbody>
 {% for p in m.projetos|sort(attribute='analise.maior_atraso_dias', reverse=true) %}
 <tr>
@@ -57,7 +58,8 @@
   <td class="num">{{ p.entrega.conclusao|pct }}</td>
   <td class="num">{{ p.entrega.pontualidade|pct }}</td>
   <td class="num">{{ p.analise.maior_atraso_dias }} d</td>
-  <td class="num">{{ p.valor_orcado|moeda if p.valor_orcado else ('erro' if p.analise.projeto.comercial else '—') }}</td>
+  <td class="num">{{ p.valor_contratado|moeda if p.valor_contratado else '—' }}{{ '*' if p.contrato and p.contrato.estimado }}</td>
+  <td class="num">{{ p.desconto|pct if p.desconto is not none else '—' }}</td>
   <td class="num">{{ p.dias_uteis_previstos or '—' }}</td>
   <td class="num">{{ p.valor_por_dia_util|moeda if p.valor_por_dia_util else '—' }}</td>
 </tr>
@@ -77,8 +79,7 @@
   <div class="card">
     <h3>Perfil da carteira</h3>
     <p class="small" style="margin:0 0 4px"><strong>Porte do cliente:</strong> {% for k, n in c.por_porte %}{{ k }} ({{ n }}){{ ', ' if not loop.last }}{% else %}—{% endfor %}</p>
-    <p class="small" style="margin:0"><strong>Dificuldade orçada:</strong> {% for k, n in c.por_dificuldade %}{{ k }} ({{ n }}){{ ', ' if not loop.last }}{% else %}—{% endfor %}</p>
-    <p class="small muted" style="margin:8px 0 0">{{ c.projetos - c.com_precificacao }} projeto(s) sem planilha de precificação encontrada; {{ c.com_precificacao - c.com_preco }} com preço ilegível na planilha.</p>
+    <p class="small" style="margin:0"><strong>Contratos sem todas as assinaturas:</strong> {{ c.assinaturas_pendentes|join(', ') or 'nenhum' }}</p>
   </div>
 </div>
 

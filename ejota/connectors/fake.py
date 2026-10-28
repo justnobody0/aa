@@ -6,8 +6,8 @@
 
 Formato de `projects.json`: veja `data/fake/projects.json`. Campos opcionais
 para dados reais: `status`, `fechada_em`, `finalizada_em`, `url` (tarefa,
-projeto e documento), `historico_completo` e `comercial` (a Planilha de
-Precificação: preços, dias úteis e etapas previstas).
+projeto e documento), `historico_completo` e `comercial` (o contrato e a
+Planilha de Precificação: preços, dias úteis e etapas previstas).
 """
 
 from __future__ import annotations
@@ -16,7 +16,7 @@ import json
 from datetime import date, datetime
 from pathlib import Path
 
-from ejota.domain import Comercial, Documento, EtapaPrevista, MudancaStatus, Projeto, Status, Tarefa, TipoDocumento
+from ejota.domain import Comercial, Contrato, Documento, EtapaPrevista, MudancaStatus, Projeto, Status, Tarefa, TipoDocumento
 
 DATA_DIR = Path(__file__).resolve().parent.parent / "data" / "fake"
 
@@ -47,6 +47,7 @@ class FonteArquivo:
     @staticmethod
     def _comercial(c: dict) -> Comercial:
         return Comercial(
+            contrato=Contrato(**c["contrato"]) if c.get("contrato") else None,
             preco_sem_margem=c.get("preco_sem_margem"),
             preco_com_margem=c.get("preco_com_margem"),
             dias_uteis=c.get("dias_uteis"),

@@ -110,16 +110,33 @@ class EtapaPrevista:
 
 
 @dataclass
-class Comercial:
-    """O que foi orçado na Planilha de Precificação do projeto.
+class Contrato:
+    """Cláusula 3 (valor e pagamento) e 2.1 (vigência) do Documento Contratual."""
 
-    O valor fechado no contrato pode ser diferente (desconto, à vista); aqui
-    fica o orçamento, que é o que existe de forma padronizada para todos.
+    valor: float
+    servico: str = ""  # objeto do contrato, ex.: "Plano de Marketing"
+    parcelas: int | None = None
+    dias_uteis: int | None = None
+    assinaturas: str = ""  # como o rodapé de auditoria do PDF registra, ex.: "3 de 6"
+    estimado: bool = False  # True = sem contrato no Drive; valor deduzido de outra fonte (ex.: nota fiscal)
+    fonte: str = ""
+    observacao: str = ""
+    url: str = ""
+
+
+@dataclass
+class Comercial:
+    """O lado comercial do projeto: o contrato (valor fechado) e a Planilha de
+    Precificação (o que foi orçado: preço, dias úteis e etapas por área).
+
+    O valor que conta como receita é o do contrato. O orçado serve para medir
+    o desconto concedido e para ratear o valor entre as áreas.
     """
 
-    preco_sem_margem: float | None  # None = planilha com erro (ex.: #REF!)
-    preco_com_margem: float | None
-    dias_uteis: int | None
+    preco_sem_margem: float | None = None  # None = sem planilha, ou planilha com erro (ex.: #REF!)
+    preco_com_margem: float | None = None
+    dias_uteis: int | None = None
+    contrato: Contrato | None = None
     horas_consultores: float | None = None
     horas_gerente: float | None = None
     dificuldade: str | None = None

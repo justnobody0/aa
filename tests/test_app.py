@@ -28,7 +28,7 @@ def test_login_errado_e_bloqueio(client):
 
 def test_metricas_rede_e_atrasos(logado):
     m = logado.get("/")
-    assert m.status_code == 200 and "Pontualidade".lower() in m.text.lower() and "carteira orçada" in m.text
+    assert m.status_code == 200 and "Pontualidade".lower() in m.text.lower() and "carteira contratada" in m.text
     assert "fictícios" in m.text and "Padaria Aurora" in m.text
     rede = logado.get("/rede")
     assert rede.status_code == 200 and 'id="dados-rede"' in rede.text and 'id="det-area-processos"' in rede.text
@@ -118,6 +118,6 @@ def test_configurar_local_cria_login_uma_vez(tmp_path):
 def test_exportar_painel_autocontido(logado):
     r = logado.get("/exportar/painel.html")
     assert r.status_code == 200 and "attachment" in r.headers["content-disposition"]
-    assert 'id="dados-rede"' in r.text and "carteira orçada" in r.text and "<style>" in r.text
+    assert 'id="dados-rede"' in r.text and "carteira contratada" in r.text and "<style>" in r.text
     assert "/static/" not in r.text
     assert "&#34;" not in r.text.split("</style>")[0]  # CSS sem escape de HTML

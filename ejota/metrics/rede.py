@@ -89,8 +89,8 @@ class Rede:
         return {
             "areas": [{"id": h.id, "rotulo": "Sem área" if h.area == SEM_AREA else h.area,
                        "central": h.area == AREA_CENTRAL, "projetos": len(h.bolhas) + h.secundarios} for h in self.hubs],
-            "projetos": [{"id": b.id, "rotulo": b.indicador.codigo.replace("EJ ", ""), "saude": b.indicador.saude,
-                          "valor": b.indicador.valor_orcado or 0,
+            "projetos": [{"id": b.id, "rotulo": b.indicador.codigo.replace("EJ ", ""), "cliente": b.analise.projeto.cliente,
+                          "saude": b.indicador.saude, "valor": b.indicador.valor_contratado or 0,
                           "areas": [ids[b.area]] + [ids[a] for a in b.outras_areas if a in ids]} for b in self.bolhas],
         }
 
@@ -142,13 +142,27 @@ def _lacunas(p: IndicadorProjeto) -> list[str]:
         out.append(f"{lac.tarefas_sem_prazo} tarefa(s) sem prazo")
     if lac.tarefas_sem_responsavel:
         out.append(f"{lac.tarefas_sem_responsavel} sem responsável")
-    if not com:
+    contrato = com.contrato if com else None
+    if not contrato:
+        out.append("sem contrato no Drive")
+    elif contrato.estimado:
+        out.append(f"valor estimado ({contrato.fonte})")
+    else:
+        m = re.search(r"(\d+)\s*de\s*(\d+)", contrato.assinaturas)
+        if m and int(m.group(1)) < int(m.group(2)):
+            out.append(f"contrato com {m.group(0)} assinaturas")
+        elif not m and contrato.assinaturas:
+            out.append(f"contrato: {contrato.assinaturas}")
+    if not com or (com.preco_com_margem is None and not com.etapas):
         out.append("sem precificação")
     elif com.preco_com_margem is None:
         out.append("precificação com erro")
-    if lac.documentos_ausentes:
-        nomes = {"Termo de Abertura do Projeto": "TAP", "ATA de Projeto": "ATA", "Contrato ou Proposta Comercial": "contrato"}
-        out.append("faltam: " + ", ".join(nomes.get(d, d) for d in lac.documentos_ausentes))
+    elif p.orcamento_incompleto:
+        out.append("precificação não cobre o contrato")
+    nomes = {"Termo de Abertura do Projeto": "TAP", "ATA de Projeto": "ATA"}
+    nao_lidos = [nomes[d] for d in lac.documentos_ausentes if d in nomes]
+    if nao_lidos:
+        out.append("não lido: " + ", ".join(nao_lidos))
     if lac.fechamentos_em_lote:
         out.append(f"{lac.fechamentos_em_lote} fechadas em lote")
     if lac.datas_do_tap_incoerentes:

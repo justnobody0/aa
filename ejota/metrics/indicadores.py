@@ -1,7 +1,7 @@
 """Indicadores da carteira: entrega, projetos e comercial.
 
 Tudo é calculado com regras fixas e explicáveis, a partir do motor de atraso
-(ClickUp) e da Planilha de Precificação (Drive). Nenhum número é estimado:
+(ClickUp), do contrato e da Planilha de Precificação (Drive). Nenhum número é estimado:
 quando falta dado, o indicador diz em quantos projetos ou tarefas ele se apoia.
 """
 
@@ -12,6 +12,7 @@ from collections import Counter, defaultdict
 from dataclasses import dataclass, field
 from statistics import median
 
+from ejota.domain import Contrato
 from ejota.engine.delays import AnaliseProjeto, AnaliseTarefa, Situacao
 
 # Situações em que já dá para dizer se a tarefa cumpriu o prazo.
@@ -36,6 +37,23 @@ def area_da_lista(lista: str) -> str:
     if base.lower() in ("etapas", "geral", ""):
         return "Geral"
     return base
+
+
+_AREAS_DO_SERVICO = (
+    (re.compile(r"marketing|branding|m[íi]dias|pitch|comercial|pesquisa", re.I), "Marketing"),
+    (re.compile(r"processos|voluntariado|gest[ãa]o de pessoas", re.I), "Processos"),
+    (re.compile(r"financ", re.I), "Finanças"),
+    (re.compile(r"\bsite\b|web|agente|\bIA\b|automa", re.I), "Tech-Dev"),
+    (re.compile(r"audiovisual|s[ée]rie|v[íi]deo", re.I), "Audiovisual"),
+    (re.compile(r"design|identidade visual", re.I), "Design"),
+)
+
+# Acima disso a planilha não cobre o que foi contratado (ex.: orçou só uma das frentes).
+_LIMITE_CONTRATO_SOBRE_ORCADO = 1.5
+
+
+def areas_do_servico(servico: str) -> set[str]:
+    return {area for padrao, area in _AREAS_DO_SERVICO if padrao.search(servico)}
 
 
 def area_da_etapa(area: str) -> str:
@@ -120,8 +138,9 @@ class IndicadorProjeto:
     entrega: Entrega
     saude: str
     motivo_saude: str
-    valor_orcado: float | None
-    dias_uteis_previstos: int | None
+    valor_contratado: float | None  # cláusula 3 do contrato (ou estimativa marcada)
+    valor_orcado: float | None  # preço com margem da Planilha de Precificação
+    dias_uteis_previstos: int | None  # vigência do contrato; sem contrato, a da planilha
     areas: list[str]
 
     @property
@@ -133,9 +152,27 @@ class IndicadorProjeto:
         return self.codigo.replace(" ", "-").lower()
 
     @property
+    def contrato(self) -> Contrato | None:
+        com = self.analise.projeto.comercial
+        return com.contrato if com else None
+
+    @property
     def valor_por_dia_util(self) -> float | None:
-        if self.valor_orcado and self.dias_uteis_previstos:
-            return round(self.valor_orcado / self.dias_uteis_previstos, 2)
+        if self.valor_contratado and self.dias_uteis_previstos:
+            return round(self.valor_contratado / self.dias_uteis_previstos, 2)
+        return None
+
+    @property
+    def orcamento_incompleto(self) -> bool:
+        """O contrato vale bem mais que o orçado: a planilha não cobre todo o escopo."""
+        return bool(self.valor_contratado and self.valor_orcado
+                    and self.valor_contratado > _LIMITE_CONTRATO_SOBRE_ORCADO * self.valor_orcado)
+
+    @property
+    def desconto(self) -> float | None:
+        """% abaixo do preço orçado com margem (negativo = fechado acima do orçado)."""
+        if self.valor_contratado and self.valor_orcado and not self.orcamento_incompleto:
+            return round(100 * (1 - self.valor_contratado / self.valor_orcado), 1)
         return None
 
 
@@ -145,22 +182,22 @@ class IndicadorArea:
     projetos: int
     entrega: Entrega
     dias_uteis_previstos: int
-    valor_orcado: float  # rateado pelos dias úteis previstos de cada etapa
+    valor: float  # valor contratado rateado entre as áreas do projeto
 
 
 @dataclass
 class Comercial:
     projetos: int
-    com_precificacao: int
-    com_preco: int
-    carteira: float  # soma do preço com margem de negociação
-    carteira_sem_margem: float
+    com_contrato: int
+    estimados: int  # sem contrato no Drive; valor deduzido de outra fonte
+    carteira: float  # soma dos valores de contrato
     ticket_medio: float | None
     ticket_mediano: float | None
-    valor_por_dia_util: float | None  # média ponderada da carteira
-    valor_por_hora_consultor: float | None
-    valor_em_atraso: float  # orçamento dos projetos com atraso
-    por_dificuldade: list[tuple[str, int]] = field(default_factory=list)
+    valor_por_dia_util: float | None  # carteira ÷ dias úteis de vigência
+    desconto_medio: float | None  # contratado vs. orçado com margem, nos projetos com os dois
+    projetos_com_desconto: int
+    valor_em_atraso: float
+    assinaturas_pendentes: list[str] = field(default_factory=list)
     por_porte: list[tuple[str, int]] = field(default_factory=list)
 
     @property
@@ -182,6 +219,17 @@ class Metricas:
         return {s: c.get(s, 0) for s in (Saude.VERMELHO, Saude.AMARELO, Saude.VERDE)}
 
 
+def areas_do_projeto(a: AnaliseProjeto) -> list[str]:
+    """Áreas que atuam no projeto: listas do ClickUp + etapas da precificação + objeto do contrato."""
+    areas = {area_da_lista(t.tarefa.lista) for t in a.tarefas} - {"Geral"}
+    com = a.projeto.comercial
+    if com:
+        areas |= {area_da_etapa(e.area) for e in com.etapas}
+        if com.contrato:  # o objeto do contrato diz quais frentes foram vendidas
+            areas |= areas_do_servico(com.contrato.servico)
+    return sorted(areas)
+
+
 def calcular_metricas(analises: list[AnaliseProjeto], causas_por_projeto: dict[str, list] | None = None) -> Metricas:
     causas_por_projeto = causas_por_projeto or {}
     todas = [t for a in analises for t in a.tarefas]
@@ -189,76 +237,98 @@ def calcular_metricas(analises: list[AnaliseProjeto], causas_por_projeto: dict[s
     projetos: list[IndicadorProjeto] = []
     for a in analises:
         com = a.projeto.comercial
-        areas = sorted({area_da_etapa(e.area) for e in com.etapas} if com and com.etapas else set())
-        if not areas:
-            areas = sorted({area_da_lista(t.tarefa.lista) for t in a.tarefas} - {"Geral"})
+        contrato = com.contrato if com else None
         saude, motivo = saude_do_projeto(a)
         projetos.append(IndicadorProjeto(
             analise=a,
             entrega=calcular_entrega(a.tarefas),
             saude=saude,
             motivo_saude=motivo,
+            valor_contratado=contrato.valor if contrato else None,
             valor_orcado=com.preco_com_margem if com else None,
-            dias_uteis_previstos=com.dias_uteis if com else None,
-            areas=areas,
+            dias_uteis_previstos=(contrato.dias_uteis if contrato and contrato.dias_uteis else None) or (com.dias_uteis if com else None),
+            areas=areas_do_projeto(a),
         ))
 
     return Metricas(
         entrega=calcular_entrega(todas),
         projetos=projetos,
-        areas=_por_area(analises),
+        areas=_por_area(projetos),
         comercial=_comercial(projetos),
         causas=_causas(causas_por_projeto),
     )
 
 
-def _por_area(analises: list[AnaliseProjeto]) -> list[IndicadorArea]:
+def _rateio(p: IndicadorProjeto) -> dict[str, float]:
+    """Peso de cada área no projeto: dias úteis das etapas da precificação; sem
+    etapas, partes iguais entre as áreas do ClickUp."""
+    com = p.analise.projeto.comercial
+    if com and com.etapas:
+        dias: Counter[str] = Counter()
+        for e in com.etapas:
+            dias[area_da_etapa(e.area)] += e.dias_uteis
+        total = sum(dias.values()) or 1
+        pesos = {a: d / total for a, d in dias.items()}
+        faltando = [a for a in p.areas if a not in pesos]
+        if faltando:  # área com tarefas no ClickUp que a planilha não orçou: recebe uma fatia igual
+            fatia = 1 / (len(pesos) + len(faltando))
+            pesos = {a: w * (1 - fatia * len(faltando)) for a, w in pesos.items()} | {a: fatia for a in faltando}
+        return pesos
+    return {a: 1 / len(p.areas) for a in p.areas} if p.areas else {}
+
+
+def _por_area(projetos: list[IndicadorProjeto]) -> list[IndicadorArea]:
     tarefas: dict[str, list[AnaliseTarefa]] = defaultdict(list)
-    projetos: dict[str, set[str]] = defaultdict(set)
+    codigos: dict[str, set[str]] = defaultdict(set)
     dias: Counter[str] = Counter()
     valor: defaultdict[str, float] = defaultdict(float)
-    for a in analises:
+    for p in projetos:
+        a = p.analise
         for t in a.tarefas:
             area = area_da_lista(t.tarefa.lista)
             tarefas[area].append(t)
-            projetos[area].add(a.projeto.codigo)
+            codigos[area].add(p.codigo)
         com = a.projeto.comercial
-        if com and com.etapas:
-            total = sum(e.dias_uteis for e in com.etapas) or 1
-            for e in com.etapas:
-                area = area_da_etapa(e.area)
-                dias[area] += e.dias_uteis
-                projetos[area].add(a.projeto.codigo)
-                if com.preco_com_margem:
-                    valor[area] += com.preco_com_margem * e.dias_uteis / total
+        for e in com.etapas if com else []:
+            dias[area_da_etapa(e.area)] += e.dias_uteis
+        for area, peso in _rateio(p).items():
+            codigos[area].add(p.codigo)
+            valor[area] += (p.valor_contratado or 0) * peso
     areas = [
-        IndicadorArea(area, len(projetos[area]), calcular_entrega(tarefas.get(area, [])), dias[area], round(valor[area], 2))
-        for area in projetos
+        IndicadorArea(area, len(codigos[area]), calcular_entrega(tarefas.get(area, [])), dias[area], round(valor[area], 2))
+        for area in codigos
     ]
-    return sorted(areas, key=lambda x: (-x.valor_orcado, -x.entrega.tarefas, x.area))
+    return sorted(areas, key=lambda x: (-x.valor, -x.entrega.tarefas, x.area))
+
+
+_ASSINATURAS = re.compile(r"(\d+)\s*de\s*(\d+)")
 
 
 def _comercial(projetos: list[IndicadorProjeto]) -> Comercial:
-    com_planilha = [p for p in projetos if p.analise.projeto.comercial]
-    com_preco = [p for p in com_planilha if p.valor_orcado]
-    valores = [p.valor_orcado for p in com_preco]
+    com_valor = [p for p in projetos if p.valor_contratado]
+    valores = [p.valor_contratado for p in com_valor]
     carteira = sum(valores)
-    dias = sum(p.dias_uteis_previstos or 0 for p in com_preco)
-    horas = sum(p.analise.projeto.comercial.horas_consultores or 0 for p in com_preco)
-    dificuldade = Counter(p.analise.projeto.comercial.dificuldade or "não informada" for p in com_planilha)
-    porte = Counter(p.analise.projeto.comercial.porte or "não informado" for p in com_planilha)
+    dias = sum(p.dias_uteis_previstos or 0 for p in com_valor if p.dias_uteis_previstos)
+    ambos = [p for p in com_valor if p.desconto is not None]
+    orcado = sum(p.valor_orcado for p in ambos)
+    pendentes = []
+    for p in com_valor:
+        m = _ASSINATURAS.search(p.contrato.assinaturas)
+        if m and int(m.group(1)) < int(m.group(2)):
+            pendentes.append(f"{p.codigo.replace('EJ ', '')} ({m.group(0)})")
+    porte = Counter(p.analise.projeto.comercial.porte for p in projetos if p.analise.projeto.comercial and p.analise.projeto.comercial.porte)
     return Comercial(
         projetos=len(projetos),
-        com_precificacao=len(com_planilha),
-        com_preco=len(com_preco),
+        com_contrato=sum(1 for p in com_valor if not p.contrato.estimado),
+        estimados=sum(1 for p in com_valor if p.contrato.estimado),
         carteira=round(carteira, 2),
-        carteira_sem_margem=round(sum(p.analise.projeto.comercial.preco_sem_margem or 0 for p in com_preco), 2),
         ticket_medio=round(carteira / len(valores), 2) if valores else None,
         ticket_mediano=round(median(valores), 2) if valores else None,
         valor_por_dia_util=round(carteira / dias, 2) if dias else None,
-        valor_por_hora_consultor=round(carteira / horas, 2) if horas else None,
-        valor_em_atraso=round(sum(p.valor_orcado for p in com_preco if p.analise.atrasado), 2),
-        por_dificuldade=dificuldade.most_common(),
+        desconto_medio=round(100 * (1 - sum(p.valor_contratado for p in ambos) / orcado), 1) if orcado else None,
+        projetos_com_desconto=len(ambos),
+        valor_em_atraso=round(sum(p.valor_contratado for p in com_valor if p.analise.atrasado), 2),
+        assinaturas_pendentes=pendentes,
         por_porte=porte.most_common(),
     )
 

@@ -156,7 +156,13 @@
       "Marketing",
       20
      ]
-    ]
+    ],
+    "contrato": {
+     "valor": 8900.0,
+     "parcelas": 5,
+     "dias_uteis": 46,
+     "assinaturas": "5 de 5"
+    }
    }
   },
   {
@@ -280,7 +286,13 @@
       "Finanças",
       20
      ]
-    ]
+    ],
+    "contrato": {
+     "valor": 11200.0,
+     "parcelas": 5,
+     "dias_uteis": 48,
+     "assinaturas": "4 de 5"
+    }
    }
   },
   {
@@ -409,7 +421,13 @@
       "Processos",
       20
      ]
-    ]
+    ],
+    "contrato": {
+     "valor": 15600.0,
+     "parcelas": 5,
+     "dias_uteis": 52,
+     "assinaturas": "5 de 5"
+    }
    }
   },
   {
@@ -513,7 +531,13 @@
       "Design",
       10
      ]
-    ]
+    ],
+    "contrato": {
+     "valor": 7300.0,
+     "parcelas": 5,
+     "dias_uteis": 40,
+     "assinaturas": "5 de 5"
+    }
    }
   },
   {
@@ -643,7 +667,15 @@
      "criada_em": "2026-08-20T10:00",
      "historico": []
     }
-   ]
+   ],
+   "comercial": {
+    "contrato": {
+     "valor": 6400.0,
+     "parcelas": 5,
+     "dias_uteis": 40,
+     "assinaturas": "3 de 4"
+    }
+   }
   }
  ]
 }
